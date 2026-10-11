@@ -26,11 +26,16 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
+import com.seagull.avt.app.ThemeState
+import com.seagull.avt.app.UiConfigState
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -107,18 +112,15 @@ private fun AppearancePage(state: SettingsUiState, host: SettingsHost, inner: Pa
         item {
             AvtCard {
                 SectionLabel("主题")
-                AvtSwitchRow(
-                    title = "跟随系统自动切换",
-                    checked = state.followSystem,
-                    onCheckedChange = { host.setFollowSystem(it) },
+                // 与 MiuixX 完全同一套：单一真源是 ThemeState.mode 这六档，
+                // 两套 UI 不再各存一份「跟随系统 / 深色」开关（之前会互相打架）。
+                AvtDropdownRow(
+                    title = "主题模式",
+                    supporting = "「莫奈」= Material You 动态取色，可从种子色推导整套配色",
+                    items = MD3_THEME_MODES,
+                    selectedIndex = ThemeState.mode,
+                    onSelectedIndexChange = { host.setThemeMode(it) },
                 )
-                AvtSwitchRow(
-                    title = "深色模式",
-                    checked = state.darkMode,
-                    onCheckedChange = { host.setDarkMode(it) },
-                    enabled = !state.followSystem,
-                )
-                Note("关闭「跟随系统」后用「深色模式」手动指定；改动立即生效。")
             }
         }
         item {
@@ -127,40 +129,40 @@ private fun AppearancePage(state: SettingsUiState, host: SettingsHost, inner: Pa
                 AvtSwitchRow(
                     title = "Material You 动态取色",
                     supporting = "从种子色推导整套配色（与 MiuixX 套同一算法）",
-                    checked = state.monet,
+                    checked = ThemeState.isMonet,
                     onCheckedChange = {
-                        host.setMonet(it, state.seedIndex, state.paletteStyle, state.colorSpec)
+                        host.setMonet(it, ThemeState.seedIndex, ThemeState.paletteStyle, ThemeState.colorSpec)
                     },
                 )
                 Note("开启后可用下面的「种子色 / 配色风格 / 色彩规范」微调。")
             }
         }
-        if (state.monet) {
+        if (ThemeState.isMonet) {
             item {
                 AvtCard {
                     SectionLabel("取色参数")
                     AvtDropdownRow(
                         title = "种子色",
                         items = listOf("默认") + com.seagull.avt.app.KeyColors.map { it.first },
-                        selectedIndex = state.seedIndex,
+                        selectedIndex = ThemeState.seedIndex,
                         onSelectedIndexChange = {
-                            host.setMonet(true, it, state.paletteStyle, state.colorSpec)
+                            host.setMonet(true, it, ThemeState.paletteStyle, ThemeState.colorSpec)
                         },
                     )
                     AvtDropdownRow(
                         title = "配色风格",
                         items = MD3_PALETTE_STYLES,
-                        selectedIndex = state.paletteStyle,
+                        selectedIndex = ThemeState.paletteStyle,
                         onSelectedIndexChange = {
-                            host.setMonet(true, state.seedIndex, it, state.colorSpec)
+                            host.setMonet(true, ThemeState.seedIndex, it, ThemeState.colorSpec)
                         },
                     )
                     AvtDropdownRow(
                         title = "色彩规范",
                         items = MD3_COLOR_SPECS,
-                        selectedIndex = state.colorSpec,
+                        selectedIndex = ThemeState.colorSpec,
                         onSelectedIndexChange = {
-                            host.setMonet(true, state.seedIndex, state.paletteStyle, it)
+                            host.setMonet(true, ThemeState.seedIndex, ThemeState.paletteStyle, it)
                         },
                     )
                 }
@@ -169,25 +171,59 @@ private fun AppearancePage(state: SettingsUiState, host: SettingsHost, inner: Pa
         item {
             AvtCard {
                 SectionLabel("界面风格")
-                AvtSwitchRow(
-                    title = "使用 MiuixX 界面",
-                    supporting = "毛玻璃 / miuix 组件；切换后应用热重启",
-                    checked = state.uiStyleMiuix,
-                    onCheckedChange = { host.setUiStyle(it) },
+                // 与 MiuixX 那边完全同款：同一组两项下拉、同样热切换、同样带折叠组联动
+                AvtDropdownRow(
+                    title = "全局风格",
+                    supporting = "切换全部页面的配色、栏体与改写页布局",
+                    items = MD3_UI_STYLES,
+                    selectedIndex = UiConfigState.uiStyle,
+                    onSelectedIndexChange = { host.setUiStyleIndex(it) },
                 )
-                Note("两套界面功能一致，只是视觉与组件库不同（Material 3 / MiuixX）。")
             }
         }
         item {
             AvtCard {
-                SectionLabel("底栏样式")
-                BottomBarStyle.entries.forEach { style ->
-                    BarStyleRow(
-                        style = style,
-                        selected = state.barStyle == style,
-                        onClick = { host.setBarStyle(style) },
-                    )
+                SectionLabel("顶栏与底栏")
+                AvtSwitchRow(
+                    title = "栏体模糊",
+                    supporting = "顶栏与底栏的毛玻璃效果",
+                    checked = UiConfigState.enableBlur,
+                    onCheckedChange = { host.setEnableBlur(it) },
+                )
+                // 与 MiuixX 一致的交互：开模糊才显示半径滑条
+                if (UiConfigState.enableBlur) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "模糊半径",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "%.1f".format(UiConfigState.blurRadius) + "px",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Slider(
+                            value = UiConfigState.blurRadius,
+                            onValueChange = { host.setBlurRadius(it) },
+                            valueRange = 0f..30f,
+                        )
+                    }
                 }
+                // 与 MiuixX 一致：底栏样式也放在这张「顶栏与底栏」卡里（选项文案保持本套）
+                AvtDropdownRow(
+                    title = "底栏样式",
+                    items = BottomBarStyle.entries.map { it.label },
+                    selectedIndex = BottomBarStyle.entries.indexOf(state.barStyle),
+                    onSelectedIndexChange = { i -> host.setBarStyle(BottomBarStyle.entries[i]) },
+                )
             }
         }
     }
@@ -200,8 +236,12 @@ private fun BarStyleRow(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Surface(
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.ContextClick)
+            onClick()
+        },
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
         color = if (selected) {
@@ -511,6 +551,14 @@ private fun DesignerRow(
 }
 
 /** miuix ThemePaletteStyle.entries 显示名（顺序与枚举一致）。 */
+/** 主题模式六档：与 MiuixX 那边的主题模式完全同序（单一真源 = ThemeState.mode）。 */
+/** 全局风格两项：顺序与 MiuixX 的「全局风格」一致（0 = MiuixX、1 = MD3）。 */
+private val MD3_UI_STYLES = listOf("MiuixX（毛玻璃）", "MD3（Material）")
+
+private val MD3_THEME_MODES = listOf(
+    "跟随系统", "浅色", "深色", "莫奈 · 跟随系统", "莫奈 · 浅色", "莫奈 · 深色",
+)
+
 private val MD3_PALETTE_STYLES = listOf(
     "Tonal Spot", "Neutral", "Vibrant", "Expressive", "Rainbow",
     "Fruit Salad", "Monochrome", "Fidelity", "Content",

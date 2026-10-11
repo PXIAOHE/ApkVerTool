@@ -10,7 +10,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
+import com.seagull.avt.app.UiConfigState
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import com.seagull.avt.md3.Md3BlurredBar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -54,6 +63,7 @@ val M3BarReservedHeight = 80.dp
 @Composable
 fun M3BottomBar(
     backdrop: Backdrop,
+    miuixBackdrop: LayerBackdrop?,
     tabs: List<AvtTab>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
@@ -62,7 +72,10 @@ fun M3BottomBar(
 ) {
     if (tabs.isEmpty()) return
 
-    val isLightTheme = !isSystemInDarkTheme()
+    val haptic = LocalHapticFeedback.current
+
+    // 深浅看主题（不是系统）：系统深色 + 主题选浅色时，原来会取暗色表层 → 糊成黑
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     // 可读性表层（onDrawSurface）。通栏面积大，本来怕糊所以压得比胶囊实；
     // 但实测玻璃感不够，按要求调透一档 —— 比两种玻璃胶囊（0.55 / 0.45）还透。
     // 再想更"水"就继续降这两个数；字开始看不清就加回去。
@@ -72,44 +85,23 @@ fun M3BottomBar(
         MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.38f)
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .drawBackdrop(
-                backdrop = backdrop,
-                // 通栏：直角矩形，不是胶囊。
-                shape = { RectangleShape },
-                effects = {
-                    vibrancy()              // 提饱和，玻璃才有「通透感」
-                    blur(8.dp.toPx())       // 背景雾化（与玻璃胶囊同档）
-                },
-                // ⚠️ 必须显式关掉边缘高光。
-                //
-                // drawBackdrop 的 highlight 参数有默认值（Highlight.Default，45° 边缘高光）。
-                // 玻璃胶囊是圆角胶囊，高光顺着弧线走、看不出来；
-                // 但这里是**通栏直角矩形**，高光正好在顶边拉成一条 **1 像素亮线** ——
-                // 之前一直被当成"分割线没删干净"，其实是这个。
-                highlight = { Highlight.Default.copy(alpha = 0f) },
-                onDrawSurface = {
-                    // 顶边渐隐。
-                    //
-                    // 实心 rect 的顶边和上方页面之间会撞出一条**水平硬边** ——
-                    // 那条边看起来跟分割线一模一样（之前有人就是这么误判的），
-                    // 但它不是 Divider，是「表层突然出现」造成的明度台阶。
-                    // 让 alpha 从 0 渐变到 surfaceColor，台阶就没了。
-                    val fade = 18.dp.toPx().coerceAtMost(size.height * 0.5f)
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            0f to surfaceColor.copy(alpha = 0f),
-                            fade / size.height to surfaceColor,
-                            startY = 0f,
-                            endY = size.height,
-                        ),
-                    )
-                },
-            ),
+    Md3BlurredBar(
+        backdrop = miuixBackdrop,
+        blurEnabled = UiConfigState.enableBlur,
+        gradient = ProgressiveBlur.Bottom,
+        blurRadius = UiConfigState.blurRadius,
+        // 调用方的 align/fillMaxWidth 必须落在最外层，否则 M3 通栏会跑到左上角
+        modifier = modifier,
     ) {
-        NavigationBar(
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // 顶边 1px 细线（MiuixX 通栏那条线框的观感）
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+            )
+            NavigationBar(
             // 关键：底栏自己的底色必须是透明的，否则会把下面的 backdrop 采样盖掉。
             containerColor = Color.Transparent,
             tonalElevation = 0.dp,
@@ -118,7 +110,10 @@ fun M3BottomBar(
                 val count = badges.getOrElse(index) { 0 }
                 NavigationBarItem(
                     selected = index == selectedIndex,
-                    onClick = { onSelect(index) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        onSelect(index)
+                    },
                     icon = {
                         val drawIcon: @Composable () -> Unit = {
                             Icon(imageVector = tab.icon, contentDescription = tab.label)
@@ -144,4 +139,5 @@ fun M3BottomBar(
             }
         }
     }
+}
 }

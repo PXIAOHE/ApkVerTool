@@ -17,6 +17,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.seagull.avt.md3.icons.IcoPalette
+import com.seagull.avt.md3.icons.IcoVpnKey
+import com.seagull.avt.md3.icons.IcoFolderOpen
+import com.seagull.avt.md3.icons.IcoInventory2
+import com.seagull.avt.md3.icons.IcoMonitorHeart
+import com.seagull.avt.md3.icons.IcoReceiptLong
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -114,10 +125,10 @@ fun MainPage(onOpenSettings: () -> Unit) {
 
     val titles = listOf("改写", "条目", "体检", "日志")
     val icons: List<ImageVector> = listOf(
-        MiuixIcons.Edit,
-        MiuixIcons.ListView,
-        MiuixIcons.Scan,
-        MiuixIcons.Settings,
+        Icons.Filled.Edit,
+        IcoInventory2,
+        IcoMonitorHeart,
+        IcoReceiptLong,
     )
 
     // 悬浮顶栏：滚动行为（各分页滚动时收拢）
@@ -155,7 +166,7 @@ fun MainPage(onOpenSettings: () -> Unit) {
                     actions = {
                         IconButton(onClick = onOpenSettings) {
                             Icon(
-                                imageVector = MiuixIcons.Settings,
+                                imageVector = Icons.Filled.Settings,
                                 contentDescription = "设置",
                                 tint = MiuixTheme.colorScheme.onSurface,
                             )

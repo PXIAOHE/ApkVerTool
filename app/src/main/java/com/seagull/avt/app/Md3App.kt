@@ -285,43 +285,37 @@ fun Md3App() {
         object : SettingsHost {
             override fun closeSettings() { backStack.removeLastOrNull() }
 
-            override fun setFollowSystem(on: Boolean) {
-                // 莫奈开启时保持莫奈模式，只切「跟随系统 / 手动深浅」这一维
-                val monet = settingsState.monet
-                ThemeState.setMode(
-                    context,
-                    when {
-                        on && monet -> ThemeState.MODE_MONET_SYSTEM
-                        on -> ThemeState.MODE_SYSTEM
-                        settingsState.darkMode && monet -> ThemeState.MODE_MONET_DARK
-                        settingsState.darkMode -> ThemeState.MODE_DARK
-                        monet -> ThemeState.MODE_MONET_LIGHT
-                        else -> ThemeState.MODE_LIGHT
-                    },
-                )
-                settingsState.followSystem = on
+            override fun setThemeMode(mode: Int) {
+                // 与 MiuixX 共用同一个真源：直接写 ThemeState.mode
+                ThemeState.setMode(context, mode)
+                settingsState.followSystem = mode == ThemeState.MODE_SYSTEM
+                settingsState.darkMode = mode == ThemeState.MODE_DARK || mode == ThemeState.MODE_MONET_DARK
+                settingsState.monet = ThemeState.isMonet
             }
 
-            override fun setDarkMode(on: Boolean) {
-                // 同上：莫奈模式下只切深浅，不退回普通模式
-                ThemeState.setMode(
-                    context,
-                    when {
-                        settingsState.monet && on -> ThemeState.MODE_MONET_DARK
-                        settingsState.monet -> ThemeState.MODE_MONET_LIGHT
-                        on -> ThemeState.MODE_DARK
-                        else -> ThemeState.MODE_LIGHT
-                    },
-                )
-                settingsState.darkMode = on
-                settingsState.followSystem = false
-            }
 
             override fun setBarStyle(style: com.seagull.avt.md3.bars.BottomBarStyle) {
                 com.seagull.avt.md3.bars.BottomBarStyle.write(
                     context.getSharedPreferences("settings", 0),
                     style,
                 )
+                // 同步给 MiuixX 那套：两套 UI 的「底栏样式」是同一件事，
+                // 以前各存各的（MiuixX 用 ui_config 两个标志位），所以主页底栏不跟着换。
+                when (style) {
+                    com.seagull.avt.md3.bars.BottomBarStyle.M3 -> {
+                        UiConfigState.useFloatingNavigationBar = false
+                    }
+                    com.seagull.avt.md3.bars.BottomBarStyle.GLASS_STATIC -> {
+                        UiConfigState.useFloatingNavigationBar = true
+                        UiConfigState.floatingNavStyle = 0
+                    }
+                    com.seagull.avt.md3.bars.BottomBarStyle.GLASS_DYNAMIC -> {
+                        UiConfigState.useFloatingNavigationBar = true
+                        UiConfigState.floatingNavStyle = 1
+                    }
+                }
+                UiConfigState.barStyle = style
+                UiConfigState.save(context)
                 settingsState.barStyle = style
             }
 
@@ -331,18 +325,23 @@ fun Md3App() {
                 palette: Int,
                 spec: Int,
             ) {
-                // 莫奈关：按当前深浅回到普通模式；开：按当前深浅进对应莫奈模式
-                val targetMode = if (on) {
-                    if (settingsState.darkMode) ThemeState.MODE_MONET_DARK
-                    else if (settingsState.followSystem) ThemeState.MODE_MONET_SYSTEM
-                    else ThemeState.MODE_MONET_LIGHT
+                // 与 MiuixX 一致：只按「当前 ThemeState.mode」这一维推目标模式，不再看镜像字段
+                val m = ThemeState.mode
+                val target = if (on) {
+                    when (m) {
+                        ThemeState.MODE_SYSTEM -> ThemeState.MODE_MONET_SYSTEM
+                        ThemeState.MODE_DARK, ThemeState.MODE_MONET_DARK -> ThemeState.MODE_MONET_DARK
+                        else -> ThemeState.MODE_MONET_LIGHT
+                    }
                 } else {
-                    if (settingsState.followSystem) ThemeState.MODE_SYSTEM
-                    else if (settingsState.darkMode) ThemeState.MODE_DARK
-                    else ThemeState.MODE_LIGHT
+                    when (m) {
+                        ThemeState.MODE_MONET_SYSTEM -> ThemeState.MODE_SYSTEM
+                        ThemeState.MODE_MONET_DARK, ThemeState.MODE_DARK -> ThemeState.MODE_DARK
+                        else -> ThemeState.MODE_LIGHT
+                    }
                 }
                 ThemeState.setMonet(context, seed = seed, palette = palette, spec = spec)
-                ThemeState.setMode(context, targetMode)
+                ThemeState.setMode(context, target)
                 settingsState.monet = on
                 settingsState.seedIndex = seed
                 settingsState.paletteStyle = palette
@@ -443,11 +442,22 @@ fun Md3App() {
                 }
             }
 
-            override fun setUiStyle(useMiuix: Boolean) {
-                if (useMiuix) {
-                    UiConfigState.uiStyle = 0
-                    UiConfigState.save(context)
-                }
+            override fun setUiStyleIndex(index: Int) {
+                // 与 MiuixX 的「全局风格」一致：改值 → 联动折叠组 → 落盘 → 重组换套
+                if (index == UiConfigState.uiStyle) return
+                UiConfigState.uiStyle = index
+                UiConfigState.foldGroups = index == 1
+                UiConfigState.save(context)
+            }
+
+            override fun setEnableBlur(on: Boolean) {
+                UiConfigState.enableBlur = on
+                UiConfigState.save(context)
+            }
+
+            override fun setBlurRadius(radius: Float) {
+                UiConfigState.blurRadius = radius
+                UiConfigState.save(context)
             }
         }
     }

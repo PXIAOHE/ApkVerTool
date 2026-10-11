@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import com.seagull.avt.app.UiConfigState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -378,9 +379,11 @@ internal fun IosLiquidGlassNavigationBar(
                                     shape = { pillShape },
                                     effects = {
                                         vibrancy()
+                                        // 吃「设置 → 外观 → 顶栏与底栏 → 模糊半径」（原来写死 4dp，
+                                        // 滑条怎么拖都不变，看起来就像"底栏没有模糊"）
                                         blur(
-                                            4.dp.toPx(),
-                                            4.dp.toPx(),
+                                            UiConfigState.blurRadius.dp.toPx(),
+                                            UiConfigState.blurRadius.dp.toPx(),
                                         )
                                         lens(
                                             refractionHeight = 24.dp.toPx(),

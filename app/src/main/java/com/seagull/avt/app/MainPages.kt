@@ -21,6 +21,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import com.seagull.avt.md3.icons.IcoArticle
+import com.seagull.avt.md3.icons.IcoCleaningServices
+import com.seagull.avt.md3.icons.IcoDeleteSweep
+import com.seagull.avt.md3.icons.IcoDownload
+import com.seagull.avt.md3.icons.IcoFileOpen
+import com.seagull.avt.md3.icons.IcoFolderOpen
+import com.seagull.avt.md3.icons.IcoInventory2
+import com.seagull.avt.md3.icons.IcoSave
+import com.seagull.avt.md3.icons.IcoStraighten
+import com.seagull.avt.md3.icons.IcoVpnKey
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -121,7 +137,7 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("📂 选择文件…") }
+            ) { BtnLabel(IcoFileOpen, "选择文件…") }
             Spacer(Modifier.height(8.dp))
             Text(
                 text = sourceText,
@@ -249,19 +265,19 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                 },
                 enabled = !AvtState.busy,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (AvtState.busy) "任务进行中…" else "🚀 开始修改 →") }
+            ) { if (AvtState.busy) Text("任务进行中…") else BtnLabel(Icons.Filled.PlayArrow, "开始修改 →") }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = { doInstall(context) },
                     enabled = installEnabled,
                     modifier = Modifier.weight(1f),
-                ) { Text("📥 安装") }
+                ) { BtnLabel(IcoDownload, "安装") }
                 Button(
                     onClick = { doShare(context) },
                     enabled = shareEnabled,
                     modifier = Modifier.weight(1f),
-                ) { Text("📤 分享") }
+                ) { BtnLabel(Icons.Filled.Share, "分享") }
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -490,7 +506,7 @@ fun EntriesPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
             Button(
                 onClick = { showAddDialog = true; entryInput = "" },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("➕ 添加替换条目…") }
+            ) { BtnLabel(Icons.Filled.Add, "添加替换条目…") }
             Spacer(Modifier.height(8.dp))
             Text(
                 entriesText,
@@ -505,7 +521,7 @@ fun EntriesPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     AvtState.appendLog("已清空替换列表")
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("🗑 清空替换列表") }
+            ) { BtnLabel(IcoDeleteSweep, "清空替换列表") }
         }
         Spacer(Modifier.height(padding.calculateBottomPadding() + 24.dp))
     }
@@ -577,12 +593,12 @@ fun InspectPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     onClick = { runInspect(context) { ApkInfo.analyze(it).describe() } },
                     enabled = !AvtState.busy,
                     modifier = Modifier.weight(1f),
-                ) { Text("📋 体检报告") }
+                ) { BtnLabel(IcoArticle, "体检报告") }
                 Button(
                     onClick = { runInspect(context) { ZipAlignWriter.alignReport(it).describe() } },
                     enabled = !AvtState.busy,
                     modifier = Modifier.weight(1f),
-                ) { Text("📐 对齐体检") }
+                ) { BtnLabel(IcoStraighten, "对齐体检") }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -599,7 +615,7 @@ fun InspectPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     },
                     enabled = !AvtState.busy,
                     modifier = Modifier.weight(1f),
-                ) { Text("🔏 验签详情") }
+                ) { BtnLabel(IcoVpnKey, "验签详情") }
                 Button(
                     onClick = {
                         runInspect(context) { f ->
@@ -613,7 +629,7 @@ fun InspectPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     },
                     enabled = !AvtState.busy,
                     modifier = Modifier.weight(1f),
-                ) { Text("📦 条目列表") }
+                ) { BtnLabel(IcoInventory2, "条目列表") }
             }
         }
 
@@ -690,7 +706,7 @@ fun LogPage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) {
             Button(
                 onClick = { AvtState.clearLog() },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("🧹 清空日志") }
+            ) { BtnLabel(IcoCleaningServices, "清空日志") }
         }
         Spacer(Modifier.height(padding.calculateBottomPadding() + 24.dp))
     }

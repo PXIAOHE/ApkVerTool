@@ -30,10 +30,17 @@ fun AvtTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    // 深浅以「主题模式」为准：浅色/深色/莫奈·浅/莫奈·深 各自说了算；
+    // 只有「跟随系统」那两档才回落到系统设置（之前一律用系统值，选浅色也不生效）
+    val dark = when (ThemeState.mode) {
+        ThemeState.MODE_DARK, ThemeState.MODE_MONET_DARK -> true
+        ThemeState.MODE_LIGHT, ThemeState.MODE_MONET_LIGHT -> false
+        else -> darkTheme
+    }
     val colorScheme = if (ThemeState.isMonet) {
-        monetScheme() ?: fallback(darkTheme)
+        monetScheme() ?: fallback(dark)
     } else {
-        fallback(darkTheme)
+        fallback(dark)
     }
     MaterialTheme(
         colorScheme = colorScheme,

@@ -20,6 +20,25 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.layerBackdrop as miuixLayerBackdrop
+import com.seagull.avt.app.BlurredBar
+import com.seagull.avt.app.UiConfigState
+import com.seagull.avt.app.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as miuixRememberLayerBackdrop
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -76,6 +95,98 @@ data class AvtTab(val label: String, val icon: ImageVector)
  * @param barStyle 传 `null` 表示「从 SharedPreferences 读当前设置」。
  *                 设置页会显式传 `state.barStyle`，这样点选时它自己的底栏立刻跟着换。
  */
+/** M3 顶栏本体高度（不含状态栏），内容顶部按它预留。 */
+private val TopBarHeight = 64.dp
+
+/**
+ * MD3 顶栏（浮层版）。
+ *
+ * 与底栏同样的思路：顶栏不放进 `Scaffold` 的槽，而是当浮层盖在内容之上，
+ * 页面内容从它底下滚过 —— 开「栏体模糊」时用 `drawBackdrop` 采图层做毛玻璃，
+ * 关掉就是原来的实色 M3 顶栏。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TopBarOverlay(
+    titleText: String,
+    actions: @Composable RowScope.() -> Unit,
+    backdrop: LayerBackdrop?,
+    modifier: Modifier = Modifier,
+) {
+    val blurOn = UiConfigState.enableBlur && backdrop != null
+    val surface = MaterialTheme.colorScheme.surfaceContainerLowest
+    Box(modifier = modifier) {
+        // 与 MiuixX 同一套：progressiveTextureBlur（贴边最强、向内渐清）+ 30% surface 混色
+        Md3BlurredBar(
+            backdrop = backdrop,
+            blurEnabled = UiConfigState.enableBlur,
+            gradient = ProgressiveBlur.Top,
+            blurRadius = UiConfigState.blurRadius,
+        ) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = titleText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
+                actions = actions,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (blurOn) Color.Transparent else surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+        }
+    }
+}
+
+
+/** MD3 版图层：底色用 MaterialTheme 的 surface（借 miuix 那版会用到它自己的主题色，在 MD3 下会发灰）。 */
+@Composable
+fun rememberMd3BlurBackdrop(): LayerBackdrop? {
+    if (!isRuntimeShaderSupported() || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return null
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    return miuixRememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
+    }
+}
+
+/** MD3 版渐进模糊栏：与 MiuixX 的 BlurredBar 同一套 progressiveTextureBlur，但混色用 MD3 的 surface。 */
+@Composable
+fun Md3BlurredBar(
+    backdrop: LayerBackdrop?,
+    blurEnabled: Boolean,
+    gradient: ProgressiveBlur,
+    blurRadius: Float,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val active = blurEnabled && backdrop != null
+    val surface = MaterialTheme.colorScheme.surface
+    Box(modifier = modifier) {
+        if (active) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .progressiveTextureBlur(
+                        backdrop = backdrop!!,
+                        shape = RectangleShape,
+                        gradient = gradient.copy(curve = 2.2f),
+                        blurRadius = blurRadius,
+                        colors = BlurDefaults.blurColors(
+                            blendColors = listOf(BlendColorEntry(color = surface.copy(alpha = 0.3f))),
+                        ),
+                    ),
+            )
+        }
+        content()
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvtScaffold(
@@ -92,7 +203,8 @@ fun AvtScaffold(
     topBarActions: @Composable RowScope.() -> Unit = {},
 ) {
     val context = LocalContext.current
-    val style = barStyle ?: remember(context) { BottomBarStyle.read(context) }
+    // 读可观察状态：设置里改底栏样式，主页立刻跟着换（原来是 remember 只读一次，得重启）
+    val style = barStyle ?: UiConfigState.barStyle
 
     val hasBar = showBottomBar && tabs.isNotEmpty()
 
@@ -109,37 +221,26 @@ fun AvtScaffold(
 
         // 造图层。必须先 drawRect 补底色再 drawContent —— 只录内容的话，
         // 玻璃边缘会采到「空」，出现透明像素（官方教程第 2 步专门讲这个坑）。
+        // kyant 图层：玻璃胶囊（drawBackdrop / lens）用
         val backdrop = rememberLayerBackdrop {
             drawRect(backgroundColor)
             drawContent()
         }
+        // miuix 图层：顶栏 / M3 通栏的「渐进模糊」用（两套 backdrop 不通用）
+        val miuixBackdrop = rememberMd3BlurBackdrop()
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (hasBar) Modifier.layerBackdrop(backdrop) else Modifier),
+                .then(if (hasBar) Modifier.layerBackdrop(backdrop) else Modifier)
+                .then(if (miuixBackdrop != null) Modifier.miuixLayerBackdrop(miuixBackdrop) else Modifier),
         ) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 containerColor = backgroundColor,
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = title(pagerState.currentPage),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleLarge,
-                            )
-                        },
-                        actions = topBarActions,
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            titleContentColor = MaterialTheme.colorScheme.onSurface,
-                            actionIconContentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-                },
+                // 顶栏槽留空：顶栏改成下面的浮层（和底栏同一个套路），
+                // 否则它会被录进图层自己、开模糊时会形成循环采样。
+                topBar = {},
                 // 三种样式都留空：底栏一律是浮层，内容才会从它底下经过。
                 bottomBar = {},
                 snackbarHost = {
@@ -152,7 +253,8 @@ fun AvtScaffold(
                 },
             ) { innerPadding ->
                 val pagePadding = PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
+                    // innerPadding.top 已经含状态栏；再补顶栏本体高度
+                    top = innerPadding.calculateTopPadding() + TopBarHeight,
                     bottom = innerPadding.calculateBottomPadding() + reservedHeight,
                 )
                 HorizontalPager(
@@ -164,12 +266,23 @@ fun AvtScaffold(
             }
         }
 
+        // 顶栏浮层：与底栏同样当兄弟节点，开「栏体模糊」时采 backdrop 做毛玻璃。
+        TopBarOverlay(
+            titleText = title(pagerState.currentPage),
+            actions = topBarActions,
+            backdrop = miuixBackdrop,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+        )
+
         // 底栏浮层。放在 Box 里当兄弟节点，绝不会被录进上面的图层
         // （录进去会形成「A 画进 B、B 又画 A」的循环采样，直接 SIGSEGV）。
         if (hasBar) {
             when (style) {
                 BottomBarStyle.M3 -> M3BottomBar(
                     backdrop = backdrop,
+                    miuixBackdrop = miuixBackdrop,
                     tabs = tabs,
                     selectedIndex = pagerState.currentPage,
                     onSelect = onSelect,

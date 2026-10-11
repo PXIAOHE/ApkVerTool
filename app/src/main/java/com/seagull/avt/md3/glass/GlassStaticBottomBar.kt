@@ -23,6 +23,8 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.seagull.avt.app.UiConfigState
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -83,7 +85,8 @@ fun GlassStaticBottomBar(
     if (tabs.isEmpty()) return
     val tabsCount = tabs.size
 
-    val isLightTheme = !isSystemInDarkTheme()
+    // 深浅看主题（不是系统）：系统深色 + 主题选浅色时，原来会取暗色表层 → 糊成黑
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     // 可读性表层（onDrawSurface）。官方原话：必须在「好看」和「看得清」之间权衡。
     val containerColor = if (isLightTheme) {
         Color.White.copy(alpha = 0.55f)
@@ -120,7 +123,8 @@ fun GlassStaticBottomBar(
                     shape = { Capsule() },
                     effects = {
                         vibrancy()                      // 提饱和，玻璃才有「通透感」
-                        blur(10.dp.toPx())              // 背景雾化
+                        // 跟设置里的开关/半径走
+                        blur(if (UiConfigState.enableBlur) 10.dp.toPx() else 0f)
                         lens(20.dp.toPx(), 26.dp.toPx()) // 边缘折射
                     },
                     highlight = { Highlight.Default },

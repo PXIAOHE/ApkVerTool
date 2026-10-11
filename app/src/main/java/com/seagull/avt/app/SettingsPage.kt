@@ -32,6 +32,28 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.seagull.avt.md3.icons.IcoPalette
+import com.seagull.avt.md3.icons.IcoVpnKey
+import com.seagull.avt.md3.icons.IcoFolderOpen
+import com.seagull.avt.md3.icons.IcoInventory2
+import com.seagull.avt.md3.icons.IcoMonitorHeart
+import com.seagull.avt.md3.icons.IcoReceiptLong
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import com.seagull.avt.md3.icons.IcoArticle
+import com.seagull.avt.md3.icons.IcoCleaningServices
+import com.seagull.avt.md3.icons.IcoDeleteSweep
+import com.seagull.avt.md3.icons.IcoDownload
+import com.seagull.avt.md3.icons.IcoFileOpen
+import com.seagull.avt.md3.icons.IcoSave
+import com.seagull.avt.md3.icons.IcoStraighten
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -114,20 +136,28 @@ fun SettingsPage(onBack: () -> Unit, onOpenChangelog: () -> Unit) {
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
         topBar = {
             // 二级页规格（对齐 ApkEditorMiuix）：Back 箭头返回 + 干净标题；底栏按需求保留
+            // 顶栏也毛玻璃：与主页顶栏同一套 BlurredBar（以前这页只有底栏有玻璃）
+            BlurredBar(
+                backdrop = backdrop,
+                blurEnabled = UiConfigState.enableBlur && UiConfigState.uiStyle == 0,
+                gradient = ProgressiveBlur.Top,
+                blurRadius = UiConfigState.blurRadius,
+            ) {
             SmallTopAppBar(
                 title = "设置",
-                color = MiuixTheme.colorScheme.surface,
+                color = if (UiConfigState.enableBlur && backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                 scrollBehavior = topBarScrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = MiuixIcons.Back,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
                             tint = MiuixTheme.colorScheme.onBackground,
                         )
                     }
                 },
             )
+            }
         },
         bottomBar = {
             if (UiConfigState.uiStyle == 1) {
@@ -141,10 +171,10 @@ fun SettingsPage(onBack: () -> Unit, onOpenChangelog: () -> Unit) {
                                 scope.launch { pagerState.animateScrollToPage(index) }
                             },
                             icon = when (index) {
-                                0 -> MiuixIcons.Theme
-                                1 -> MiuixIcons.Lock
-                                2 -> MiuixIcons.Folder
-                                else -> MiuixIcons.Info
+                                0 -> IcoPalette
+                                1 -> IcoVpnKey
+                                2 -> IcoFolderOpen
+                                else -> Icons.Filled.Info
                             },
                             label = label,
                         )
@@ -157,10 +187,10 @@ fun SettingsPage(onBack: () -> Unit, onOpenChangelog: () -> Unit) {
                         NavigationItem(
                             SETTING_TITLES[i],
                             when (i) {
-                                0 -> MiuixIcons.Theme
-                                1 -> MiuixIcons.Lock
-                                2 -> MiuixIcons.Folder
-                                else -> MiuixIcons.Info
+                                0 -> IcoPalette
+                                1 -> IcoVpnKey
+                                2 -> IcoFolderOpen
+                                else -> Icons.Filled.Info
                             },
                         )
                     }
@@ -211,10 +241,10 @@ fun SettingsPage(onBack: () -> Unit, onOpenChangelog: () -> Unit) {
                                 scope.launch { pagerState.animateScrollToPage(index) }
                             },
                             icon = when (index) {
-                                0 -> MiuixIcons.Theme
-                                1 -> MiuixIcons.Lock
-                                2 -> MiuixIcons.Folder
-                                else -> MiuixIcons.Info
+                                0 -> IcoPalette
+                                1 -> IcoVpnKey
+                                2 -> IcoFolderOpen
+                                else -> Icons.Filled.Info
                             },
                             label = label,
                         )
@@ -236,10 +266,10 @@ fun SettingsPage(onBack: () -> Unit, onOpenChangelog: () -> Unit) {
                                     scope.launch { pagerState.animateScrollToPage(index) }
                                 },
                                 icon = when (index) {
-                                    0 -> MiuixIcons.Theme
-                                    1 -> MiuixIcons.Lock
-                                    2 -> MiuixIcons.Folder
-                                    else -> MiuixIcons.Info
+                                    0 -> IcoPalette
+                                    1 -> IcoVpnKey
+                                    2 -> IcoFolderOpen
+                                    else -> Icons.Filled.Info
                                 },
                                 label = label,
                             )
@@ -398,6 +428,15 @@ private fun AppearanceTab(padding: androidx.compose.foundation.layout.PaddingVal
                         else -> { UiConfigState.useFloatingNavigationBar = true; UiConfigState.floatingNavStyle = 1 }
                     }
                     UiConfigState.save(context)
+                    // 反向同步：MiuixX 这边改底栏样式，MD3 那套的「底栏样式」也跟着走（同一件事）
+                    com.seagull.avt.md3.bars.BottomBarStyle.write(
+                        context.getSharedPreferences("settings", 0),
+                        when (i) {
+                            0 -> com.seagull.avt.md3.bars.BottomBarStyle.M3
+                            1 -> com.seagull.avt.md3.bars.BottomBarStyle.GLASS_STATIC
+                            else -> com.seagull.avt.md3.bars.BottomBarStyle.GLASS_DYNAMIC
+                        },
+                    )
                 },
             )
         }
@@ -511,7 +550,7 @@ private fun SignTab(padding: androidx.compose.foundation.layout.PaddingValues) {
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
-                    text = "💾 保存密码",
+                    text = "保存密码",
                     onClick = {
                         AvtPrefs.setKeyPass(context, keyPass)
                         Toast.makeText(context, "已保存密钥密码", Toast.LENGTH_SHORT).show()
@@ -520,7 +559,7 @@ private fun SignTab(padding: androidx.compose.foundation.layout.PaddingValues) {
                 )
                 Spacer(Modifier.width(8.dp))
                 TextButton(
-                    text = "🔑 生成新密钥",
+                    text = "生成新密钥",
                     onClick = {
                         scope.launch {
                             runCatching {
@@ -548,7 +587,7 @@ private fun SignTab(padding: androidx.compose.foundation.layout.PaddingValues) {
             }
             Spacer(Modifier.height(8.dp))
             TextButton(
-                text = "↺ 恢复内置密钥",
+                text = "恢复内置密钥",
                 onClick = {
                     File(context.filesDir, "custom_key.p12").delete()
                     context.getSharedPreferences("settings", 0)
@@ -620,13 +659,13 @@ private fun OutputTab(padding: androidx.compose.foundation.layout.PaddingValues)
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
-                    text = "📁 选择文件夹",
+                    text = "选择文件夹",
                     onClick = { dirPicker.launch(null) },
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
                 TextButton(
-                    text = "↺ 默认",
+                    text = "默认",
                     onClick = {
                         AvtPrefs.setOutputUri(context, null)
                         outputPath = "● 当前：默认（应用私有目录 + 手动导出）"

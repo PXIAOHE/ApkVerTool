@@ -13,6 +13,8 @@ object UiConfigState {
     var floatingNavStyle by mutableStateOf(1) // 0=默认, 1=iOS 风格
     // 全局 UI 风格：0 = MiuixX（毛玻璃/大圆角/平铺），1 = MD3（实色栏/小圆角/折叠分组）
     var uiStyle by mutableStateOf(0)
+    /** 底栏样式（与 BottomBarStyle 同一份语义）：两套 UI 共用，改动即时生效。 */
+    var barStyle by mutableStateOf(com.seagull.avt.md3.bars.BottomBarStyle.default())
     // 改写页布局：MD3 风格下折叠分组；Miuix 风格下平铺
     var foldGroups by mutableStateOf(true)
 
@@ -24,6 +26,7 @@ object UiConfigState {
         floatingNavStyle = prefs.getInt("floating_nav_style", 1)
         uiStyle = prefs.getInt("ui_style", 0)
         foldGroups = prefs.getBoolean("fold_groups", true)
+        barStyle = com.seagull.avt.md3.bars.BottomBarStyle.read(context)
     }
 
     fun save(context: Context) {

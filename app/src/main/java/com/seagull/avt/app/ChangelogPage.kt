@@ -23,6 +23,17 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.seagull.avt.md3.icons.IcoPalette
+import com.seagull.avt.md3.icons.IcoVpnKey
+import com.seagull.avt.md3.icons.IcoFolderOpen
+import com.seagull.avt.md3.icons.IcoInventory2
+import com.seagull.avt.md3.icons.IcoMonitorHeart
+import com.seagull.avt.md3.icons.IcoReceiptLong
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,7 +80,7 @@ fun ChangelogPage(onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = MiuixIcons.Back,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
                             tint = MiuixTheme.colorScheme.onBackground,
                         )

@@ -23,8 +23,8 @@ interface MainHost {
 /** 设置页回调。 */
 interface SettingsHost {
     fun closeSettings()
-    fun setFollowSystem(on: Boolean)
-    fun setDarkMode(on: Boolean)
+    /** 主题模式（0 跟随 / 1 浅 / 2 深 / 3 莫奈·跟随 / 4 莫奈·浅 / 5 莫奈·深），与 MiuixX 同一套。 */
+    fun setThemeMode(mode: Int)
     /** 莫奈取色开关 + 参数（种子色 / 配色风格 / 色彩规范）。 */
     fun setMonet(on: Boolean, seed: Int, palette: Int, spec: Int)
     /** 切换底栏样式（三选一）。 */
@@ -41,8 +41,12 @@ interface SettingsHost {
     fun resetOutputDir()
     fun openChangelog()
     fun openUrl(url: String)
-    /** 界面风格：true = 切回 MiuixX（recreate 热重启）。 */
-    fun setUiStyle(useMiuix: Boolean)
+    /** 界面风格下标：0 = MiuixX（毛玻璃）、1 = MD3（Material），与 MiuixX 的「全局风格」同序。 */
+    fun setUiStyleIndex(index: Int)
+    /** 栏体模糊开关（顶栏与底栏的毛玻璃效果）。 */
+    fun setEnableBlur(on: Boolean)
+    /** 模糊半径（0..30，与 MiuixX 同一个区间）。 */
+    fun setBlurRadius(radius: Float)
 }
 
 /** 更新日志页回调。 */
