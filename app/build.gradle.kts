@@ -17,8 +17,9 @@ android {
         minSdk = 33
         targetSdk = 36
         // 与 version.py 单一真源保持一致（2.0.3 / 26）
-        versionCode = 26
-        versionName = "2.0.3"
+        // 相对上游 v2.1.0 递增（上游是 27 / 2.1.0），避免版本号倒退
+        versionCode = 28
+        versionName = "2.2.0"
     }
 
     // 签名配置：照抄原版 ApkVerTool —— 直接用仓库内置的 signkey.p12
