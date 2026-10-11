@@ -338,29 +338,23 @@ public class AvtCli {
 
         // 7. dex 字符串表任意长度改写
         System.out.println("\n[7] DEX 字符串表改写（任意长度 + 摘要重算）");
-        byte[] dex = ZipAlignWriter.extractEntry(apk, "classes.dex");
-        List<String> src0 = Dex.strings(dex);
-        // 自适应挑一个一定存在的候选：优先包名字符串，否则用第一个类描述符的包
-        String fakeOld = null, fakeNew = null;
-        for (int i = 0; i < src0.size(); i++) {
-            String s = src0.get(i);
-            if (s.indexOf("com.seagull.apkvertool") >= 0 && s.indexOf('/') < 0) { fakeOld = "com.seagull.apkvertool"; break; }
+        String pkgReal = b.packageName == null ? "com.seagull.apkvertool" : b.packageName;
+        String fakeOld = pkgReal;                                    // 候选就是样本真实包名，不再猜
+        String fakeNew = "zz" + pkgReal.replace(".", "") + "deep9";   // 去点拼接 ⇒ 新名里不含旧的斜杠/点号形式
+        String dexName = null;
+        byte[] dex = null;
+        for (String n : ZipAlignWriter.listNames(apk)) {              // 包名可能只出现在 classes2.dex
+            if (!isRootDex(n)) continue;
+            byte[] d = ZipAlignWriter.extractEntry(apk, n);
+            if (countPkgRefs(Dex.strings(d), fakeOld) > 0) { dexName = n; dex = d; break; }
         }
-        if (fakeOld == null) {
-            for (int i = 0; i < src0.size(); i++) {
-                String s = src0.get(i);
-                if (s.length() > 4 && s.charAt(0) == 'L' && s.endsWith(";") && s.indexOf('/') > 1) {
-                    String pkgSlash = s.substring(1, s.lastIndexOf('/'));
-                    fakeOld = pkgSlash.replace('/', '.');
-                    break;
-                }
-            }
-        }
-        if (fakeOld == null) {
-            System.out.println("    !   样本里找不到可用候选，跳过");
+        if (dex == null) {
+            System.out.println("    !   没有任何 classes*.dex 引用包名 " + fakeOld);
             fail++;
         } else {
-            fakeNew = "zz" + fakeOld.replace(".", "") + "deep9";   // 刻意不包含旧名，便于校验残留
+            List<String> src0 = Dex.strings(dex);
+            int before = countPkgRefs(src0, fakeOld);
+            System.out.println("    样本 " + dexName + "：引用该包名 " + before + " 条字符串");
             System.out.println("    候选包名: " + fakeOld + "  →  " + fakeNew
                     + "（长度 " + fakeOld.length() + " → " + fakeNew.length() + "）");
             Dex.Result dr = Dex.rewrite(dex, new PkgRename(fakeOld, fakeNew));
@@ -372,16 +366,10 @@ public class AvtCli {
             System.out.println("    " + (digOk ? "OK  " : "!   ") + "dex SHA-1 / Adler-32 摘要正确");
             if (digOk) pass++; else fail++;
             List<String> after = Dex.strings(dr.dex);
-            String newSlash = fakeNew.replace('.', '/');
-            String oldSlash = fakeOld.replace('.', '/');
-            int hit = 0, left = 0;
-            for (int i = 0; i < after.size(); i++) {
-                String s = after.get(i);
-                if (s.indexOf(newSlash) >= 0 || s.indexOf(fakeNew) >= 0) hit++;
-                if (s.indexOf(oldSlash) >= 0 || s.indexOf(fakeOld) >= 0) left++;
-            }
-            System.out.println("    改后含新包名 " + hit + " 条，残留旧包名 " + left + " 条");
-            if (hit > 0 && left == 0) { pass++; System.out.println("    → 全量替换 OK"); }
+            int hit = countPkgRefs(after, fakeNew);       // 含新包名
+            int left = countPkgRefs(after, fakeOld);      // 残留旧包名
+            System.out.println("    改后含新包名 " + hit + " 条，残留旧包名 " + left + " 条（改前 " + before + " 条）");
+            if (left == 0 && hit == before) { pass++; System.out.println("    → 全量替换 OK"); }
             else { fail++; System.out.println("    → 全量替换 FAIL"); }
         }
 
@@ -459,23 +447,23 @@ public class AvtCli {
 
         // 11. .so 等长原地替换（含边界规则）
         System.out.println("\n[11] .so 等长原地替换 + 边界规则");
-        if (fakeOld == null) fakeOld = "com.seagull.apkvertool";
-        char lastCh = fakeOld.charAt(fakeOld.length() - 1);
-        String eqNew = fakeOld.substring(0, fakeOld.length() - 1) + (lastCh == 'x' ? 'q' : 'x');
-        System.out.println("    等长替换: " + fakeOld + "  →  " + eqNew);
-        PkgRename eq = new PkgRename(fakeOld, eqNew);
-        byte[] soData = ("ELFprobe\u0000"
-                + "L" + fakeOld.replace('.', '/') + "/Foo;\u0000"
-                + fakeOld + ".Sub\u0000"
-                + fakeOld + "YShouldNotMatch\u0000").getBytes("UTF-8");
+        String soOld = pkgReal;
+        char lastCh = soOld.charAt(soOld.length() - 1);
+        String eqNew = soOld.substring(0, soOld.length() - 1) + (lastCh == 'x' ? 'q' : 'x');
+        System.out.println("    等长替换: " + soOld + "  →  " + eqNew);
+        PkgRename eq = new PkgRename(soOld, eqNew);
+        byte[] soData = ("ELFprobe\0"
+                + "L" + soOld.replace('.', '/') + "/Foo;\0"
+                + soOld + ".Sub\0"
+                + soOld + "YShouldNotMatch\0").getBytes("UTF-8");
         int hits = PackageRenamer.patchBytes(soData, eq);
         String soStr = new String(soData, "UTF-8");
         String eqSlash = eqNew.replace('.', '/');
         boolean replacedSlash = soStr.contains("L" + eqSlash + "/Foo;");
         boolean replacedDot = soStr.contains(eqNew + ".Sub");
-        boolean boundaryKept = soStr.contains(fakeOld + "YShouldNotMatch");
-        boolean noResidue = !soStr.contains("L" + fakeOld.replace('.', '/') + "/Foo;")
-                && !soStr.contains(fakeOld + ".Sub");
+        boolean boundaryKept = soStr.contains(soOld + "YShouldNotMatch");
+        boolean noResidue = !soStr.contains("L" + soOld.replace('.', '/') + "/Foo;")
+                && !soStr.contains(soOld + ".Sub");
         System.out.println("    命中 " + hits + " 处；斜杠形式=" + replacedSlash + " 点号形式=" + replacedDot
                 + " 边界保护=" + boundaryKept + " 无残留=" + noResidue);
         if (replacedSlash && replacedDot && boundaryKept && noResidue && hits == 2) {
@@ -487,10 +475,15 @@ public class AvtCli {
         // 12. 带 .so 的整包包名联动
         System.out.println("\n[12] 带 .so 的整包包名联动");
         ZipAlignWriter.Edit soEdit = new ZipAlignWriter.Edit();
-        soEdit.replace.put("lib/arm64-v8a/libprobe.so", ("ELF\u0000"
-                + "L" + fakeOld.replace('.', '/') + "/Native;\u0000" + fakeOld + ".Jni\u0000").getBytes("UTF-8"));
+        soEdit.replace.put("lib/arm64-v8a/libprobe.so", ("ELF\0"
+                + "L" + soOld.replace('.', '/') + "/Native;\0" + soOld + ".Jni\0").getBytes("UTF-8"));
         File withSo = File.createTempFile("avt_so", ".apk");
         ZipAlignWriter.rewrite(repacked, withSo, soEdit);
+        int expectSo = 0;      // 包里本来有几个 .so 引用旧包名，加上探针这 1 个（不写死，免得换个样本就假失败）
+        for (String n : ZipAlignWriter.listNames(withSo)) {
+            if (!ZipAlignWriter.isSo(n)) continue;
+            if (containsPkg(ZipAlignWriter.extractEntry(withSo, n), soOld)) expectSo++;
+        }
         File soOut = File.createTempFile("avt_so_out", ".apk");
         ApkPatcher.Job sj = new ApkPatcher.Job();
         sj.resign = false;
@@ -498,10 +491,10 @@ public class AvtCli {
         ApkPatcher.Outcome soOc = ApkPatcher.patch(withSo, soOut, sj);
         byte[] soAfter = ZipAlignWriter.extractEntry(soOut, "lib/arm64-v8a/libprobe.so");
         String soAfterStr = new String(soAfter, "UTF-8");
-        boolean soOk = soAfterStr.contains(eqSlash + "/Native;") && !soAfterStr.contains(fakeOld.replace('.', '/'));
+        boolean soOk = soAfterStr.contains(eqSlash + "/Native;") && !soAfterStr.contains(soOld.replace('.', '/'));
         System.out.println("    原生库改写 " + soOc.rename.soChanged + "/" + soOc.rename.soTotal
-                + "，包名 " + soOc.after.packageName);
-        if (soOk && soOc.rename.soChanged == 1 && eqNew.equals(soOc.after.packageName)) {
+                + "（应改写 " + expectSo + " 个），包名 " + soOc.after.packageName);
+        if (soOk && soOc.rename.soChanged == expectSo && eqNew.equals(soOc.after.packageName)) {
             pass++; System.out.println("    → 整包联动 OK");
         } else {
             fail++; System.out.println("    → 整包联动 FAIL");
@@ -513,6 +506,39 @@ public class AvtCli {
 
         System.out.println("\n=== 结果: " + pass + " 项通过, " + fail + " 项失败 ===");
         if (fail > 0) System.exit(1);
+    }
+
+    /** classes*.dex 判定（只认根目录下的 classesN.dex）。 */
+    private static boolean isRootDex(String name) {
+        if (!name.endsWith(".dex")) return false;
+        String base = name.indexOf('/') < 0 ? name : name.substring(name.lastIndexOf('/') + 1);
+        return base.startsWith("classes");
+    }
+
+    /** 有多少条字符串引用了该包名（斜杠形式或点号形式都算）。 */
+    private static int countPkgRefs(List<String> strings, String pkg) {
+        String slash = pkg.replace('.', '/');
+        int n = 0;
+        for (int i = 0; i < strings.size(); i++) {
+            String s = strings.get(i);
+            if (s != null && (s.indexOf(slash) >= 0 || s.indexOf(pkg) >= 0)) n++;
+        }
+        return n;
+    }
+
+    /** .so 没有字符串表，直接在原始字节里找包名。 */
+    private static boolean containsPkg(byte[] data, String pkg) {
+        return indexOf(data, pkg.getBytes(java.nio.charset.Charset.forName("UTF-8"))) >= 0
+                || indexOf(data, pkg.replace('.', '/').getBytes(java.nio.charset.Charset.forName("UTF-8"))) >= 0;
+    }
+
+    private static int indexOf(byte[] data, byte[] pat) {
+        outer:
+        for (int i = 0; i + pat.length <= data.length; i++) {
+            for (int j = 0; j < pat.length; j++) if (data[i + j] != pat[j]) continue outer;
+            return i;
+        }
+        return -1;
     }
 
     private static String enc(AxmlPatch.Info i) {
