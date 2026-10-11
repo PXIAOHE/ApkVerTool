@@ -81,6 +81,49 @@ jobs:
           name: apk-release
           path: app/build/outputs/apk/release/*.apk
 
+      # 发版说明：从 version.py（单一真源）里取当前版本那一条生成，
+      # 取不到退回 CHANGELOG.md 对应小节，再取不到退回一句话。三步都不会让构建失败。
+      - name: Generate release notes
+        run: |
+          set -e
+          python3 - "${{ steps.ver.outputs.name }}" > release-notes.md <<'PY'
+          import importlib.util, io, re, sys
+
+          name = sys.argv[1]
+          items, date = [], ""
+
+          try:
+              spec = importlib.util.spec_from_file_location("version", "version.py")
+              v = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(v)
+              for ver, d, it in v.CHANGELOG:
+                  if ver == name:
+                      items, date = list(it), d
+                      break
+          except Exception as e:
+              sys.stderr.write("version.py 解析失败: %s\n" % e)
+
+          if items:
+              print("## ApkVerTool v%s  %s\n" % (name, date))
+              for n, t in enumerate(items, 1):
+                  print("%d. %s" % (n, t))
+          else:
+              body = ""
+              try:
+                  md = io.open("CHANGELOG.md", encoding="utf-8").read()
+                  m = re.search(r"^##\s*v?%s\b.*?\n(.*?)(?=^## |\Z)" % re.escape(name), md, re.S | re.M)
+                  if m:
+                      body = m.group(1).strip()
+              except Exception:
+                  pass
+              print("## ApkVerTool v%s\n" % name)
+              print(body if body else "更新内容见仓库根目录 `CHANGELOG.md`。")
+
+          print("\n---\n产物已用仓库内置 `signkey.p12` 签名，可直接安装；引擎（`:core`）与命令行（`:cli`）见仓库源码。")
+          PY
+          echo "---- release-notes.md ----"
+          cat release-notes.md
+
       # 打 v* 标签或手动触发时，顺便发成 GitHub Release（用官方 gh CLI，无第三方依赖）。
       # push 到 main 的日常构建只上传 artifact，不发版，避免每次提交都产生 Release。
       - name: Publish to GitHub Releases
@@ -93,14 +136,14 @@ jobs:
           APK="${{ steps.apk.outputs.path }}"
           echo "发布 $TAG <- $APK"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "该 Release 已存在，覆盖上传 APK"
+            echo "该 Release 已存在，覆盖上传 APK + 刷新说明"
             gh release upload "$TAG" "$APK" --clobber
+            gh release edit "$TAG" \
+              --title "ApkVerTool v${{ steps.ver.outputs.name }}" \
+              --notes-file release-notes.md
           else
             gh release create "$TAG" "$APK" \
               --title "ApkVerTool v${{ steps.ver.outputs.name }}" \
-              --notes "ApkVerTool v${{ steps.ver.outputs.name }}（versionCode ${{ steps.ver.outputs.code }}）
-
-          产物已用仓库内置 \`signkey.p12\` 签名，可直接安装。
-          更新内容见仓库根目录 \`CHANGELOG.md\`。" \
+              --notes-file release-notes.md \
               --latest
           fi
