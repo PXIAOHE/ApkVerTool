@@ -1,0 +1,53 @@
+name: Build Release APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:      # 手动触发（其他分支走这里）
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=3g"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle (cached)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission
+        run: chmod +x ./gradlew
+
+      # R8 构建；签名由 gradle signingConfig 完成（照抄原版：仓库内置 signkey.p12，V1+V2+V3）
+      - name: Build Release APK
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      # 校验签名确实打上了。
+      # 注意：AGP 9 在 minSdk >= 33 时会自动跳过 V1/V2、只打 V3（V3 向下兼容 V2 校验），
+      # 所以这里只要求「验签通过且有一个签名者」，不强求具体 scheme。
+      - name: Verify signature
+        run: |
+          set -e
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          echo "APK: $APK"
+          "$APKSIGNER" verify --verbose "$APK" | tee verify.txt
+          grep -qi '^Verifies$' verify.txt \
+            || { echo "::error::APK signature verification failed"; exit 1; }
+          grep -qi 'Number of signers: [1-9]' verify.txt \
+            || { echo "::error::no signer found"; exit 1; }
+          echo "签名校验通过 ✓"
+          "$APKSIGNER" verify --print-certs "$APK" | sed -n '1,8p'
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-release
+          path: app/build/outputs/apk/release/*.apk

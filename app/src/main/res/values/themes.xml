@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ApkVerTool" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/avt_window_bg</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
+    <!-- Compose 全接管 UI，这里只提供一个不带 ActionBar 的基础主题 -->
+    <style name="Theme.Avt" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
 </resources>

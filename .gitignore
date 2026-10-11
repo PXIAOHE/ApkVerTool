@@ -1,42 +1,13 @@
-# ── Gradle / 构建产物 ──
+# gradle
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
+app/build/
 local.properties
-.kotlin/
 
-# ── Android 产物 ──
-*.apk
-*.aab
-*.ap_
-*.dex
-*.idsig
-release/
-captures/
-.externalNativeBuild/
-.cxx/
-
-# ── IDE ──
+# IDE
 .idea/
 *.iml
-.vscode/
 
-# ── 归档 / 预编译产物（不进仓库，需要就放 GitHub Release）──
-/dist/
-/legacy/__pycache__/
-
-# ── 内部笔记（AI 工作区，不是项目文档）──
-.workbuddy/
-
-# ── 杂项 ──
-*.log
-*.hprof
-.DS_Store
-__pycache__/
-*.pyc
-
-# ⚠️ 关于 signkey.p12（有意**不**忽略，见 README「签名密钥」一节）：
-#    - 它是本工程的**测试密钥**，已经打在每一个发布出去的 APK 里
-#      （assets/signkey.p12），任何人 unzip 一下就能拿到，不是秘密；
-#    - 但发布签名（app/build.gradle.kts 用 rootProject.file("signkey.p12")）
-#      和它同一把钥匙 —— 正式对外发版前请务必换成自己的，并把它从仓库里拿掉。
+# 旧手搓构建链的产物
+build/
+dex/

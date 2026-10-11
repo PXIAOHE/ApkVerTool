@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ApkVerTool 清单：AGP 托管版本号（版本真源仍是 version.py，见 app/build.gradle.kts） -->
+<!-- ApkVerTool：gradle 工程清单。版本号与 version.py 保持一致（2.0.3 / 26） -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:label="ApkVerTool"
+        android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@style/Theme.ApkVerTool"
         android:hardwareAccelerated="true"
-        android:allowBackup="false">
+        android:allowBackup="false"
+        android:theme="@style/Theme.Avt">
 
         <activity
             android:name="com.seagull.avt.app.MainActivity"
@@ -21,16 +21,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="com.seagull.avt.app.SettingsActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
-
-        <activity
-            android:name="com.seagull.avt.app.ChangelogActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
 
         <provider
             android:name="com.seagull.avt.app.ApkProvider"
