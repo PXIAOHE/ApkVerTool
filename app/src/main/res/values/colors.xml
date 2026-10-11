@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 界面全部由 Compose Material 3 绘制，这里只负责去掉 ActionBar 与给首帧一个底色 -->
+    <color name="avt_window_bg">#FFF7FAFD</color>
+</resources>

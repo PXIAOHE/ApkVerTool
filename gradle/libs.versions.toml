@@ -1,0 +1,63 @@
+[versions]
+# ---- 构建工具链（与本机 Gradle 8.14.2 / JDK 17 已验证兼容）----
+agp = "8.13.2"
+kotlin = "2.4.20"
+
+# ---- Compose ----
+# ⚠️ 刻意【不用 Compose BOM】：BOM 2026.09.00 会把 ui / foundation / runtime 解析到 1.12.1，
+#    而 1.12.1 的 AAR 元数据写着 minCompileSdk=37 + minAndroidGradlePluginVersion=9.1.0
+#    （实测 aar-metadata.properties），AGP 8.13.2 直接编不过；升 AGP 9.x 又要求 Gradle 9.x，
+#    本机 Gradle 是 8.14.2 → 死锁。所以改成显式锁版本：
+#      1.11.2 = 最后一个 minCompileSdk=35 / minAGP=8.6.0 的 Compose 主线版本。
+#    后续升级请先确认新版本的 aar-metadata.properties 仍然接受 AGP 8.13.2。
+composeUi = "1.11.2"
+# material3 1.4.0：minCompileSdk=35 / minAGP=8.6.0，与上面的 composeUi 同代，可共存。
+composeMaterial3 = "1.4.0"
+# material-icons 已停更在 1.7.8，不受任何 BOM 管理，必须写死。
+composeMaterialIcons = "1.7.8"
+
+# ---- 液态玻璃（Kyant0/AndroidLiquidGlass）----
+# ⚠️ 版本选择有坑，别随手升级：
+#   2.0.1（最新）依赖 JetBrains Compose 1.12.0 → androidx.compose.ui:ui:1.12.x
+#      → 那个版本的 aar-metadata 要求 minAndroidGradlePluginVersion=9.1.0
+#      → AGP 8.13.2 直接编不过，升 AGP 9.x 又要 Gradle 9.x（本机 8.14.2）⇒ 死锁。
+#   2.0.0 依赖 JetBrains Compose 1.11.0 → androidx.compose.ui:ui:1.11.1
+#      → 与本工程的 androidx compose 1.11.2 同代，且 minAGP=8.6.0，可用。
+#   ⚠️ 但 backdrop 自己的 AAR 声明 minCompileSdk=37（2.0.0-rc01 起就是 37）
+#      → compileSdk 必须 ≥ 37（本机已装 android-37.0 平台）。
+#      只有 2.0.0-alpha03 是 minCompileSdk=36，但那是 alpha，不选。
+backdrop = "2.0.0"
+# shapes 1.2.0 = minCompileSdk 36，与 backdrop 2.0.0 配套（提供 Capsule / RoundedRectangle）。
+kyantShapes = "1.2.0"
+
+# ---- AndroidX 基础库 ----
+# core-ktx 1.18.0（minCompileSdk=36 / minAGP=8.9.1）—— 1.19.0 要求 AGP 9.1，不可用。
+coreKtx = "1.18.0"
+# activity 1.13.0（minCompileSdk=36 / minAGP=8.9.1），会顺带把 lifecycle 抬到 2.9.4（sdk=35），也没问题。
+activityCompose = "1.13.0"
+
+[libraries]
+compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "composeUi" }
+compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "composeUi" }
+compose-ui = { module = "androidx.compose.ui:ui", version.ref = "composeUi" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "composeUi" }
+
+# ===== Material 3 核心 =====
+compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "composeMaterial3" }
+
+# ===== 图标：只用 core（49 个基础图标）；本工程另有一份自抽图标 AvtIcons.kt =====
+# 刻意不引 material-icons-extended —— 本工程 minify 关闭，整包会让 dex 膨胀几十 MB。
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "composeMaterialIcons" }
+
+# ===== 液态玻璃：悬浮底栏的背景采样 + RenderEffect 链（见顶部版本说明）=====
+kyant-backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
+kyant-shapes = { module = "io.github.kyant0:shapes", version.ref = "kyantShapes" }
+
+# ===== AndroidX 基础 =====
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

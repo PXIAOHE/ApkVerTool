@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由 mkres.py 从 version.py 生成，勿手改 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.seagull.apkvertool"
+    android:versionCode="26"
+    android:versionName="2.0.3">
+
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application
+        android:label="ApkVerTool"
+        android:icon="@mipmap/ic_launcher"
+        android:hardwareAccelerated="true"
+        android:allowBackup="false">
+
+        <activity
+            android:name="com.seagull.avt.app.MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.seagull.avt.app.SettingsActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+
+        <activity
+            android:name="com.seagull.avt.app.ChangelogActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+
+        <provider
+            android:name="com.seagull.avt.app.ApkProvider"
+            android:authorities="com.seagull.apkvertool.files"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>
