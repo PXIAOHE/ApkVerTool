@@ -3,7 +3,11 @@ name: Build Release APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:      # 手动触发（其他分支走这里）
+    tags: [ 'v*' ]        # 打 v* 标签时直接发 Release
+  workflow_dispatch:      # 手动触发（发版 / 其他分支）
+
+permissions:
+  contents: write         # 发布 Release 需要写权限
 
 jobs:
   build:
@@ -25,7 +29,21 @@ jobs:
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      # R8 构建；签名由 gradle signingConfig 完成（照抄原版：仓库内置 signkey.p12，V1+V2+V3）
+      # 版本号从 version.py 单一真源取（与产物一致）
+      - name: Read version
+        id: ver
+        run: |
+          set -e
+          NAME=$(python3 version.py name)
+          CODE=$(python3 version.py code)
+          {
+            echo "name=$NAME"
+            echo "code=$CODE"
+            echo "tag=v$NAME"
+          } >> "$GITHUB_OUTPUT"
+          echo "版本: v$NAME ($CODE)"
+
+      # R8 构建；签名由 gradle signingConfig 完成（仓库内置 signkey.p12，V1+V2+V3）
       - name: Build Release APK
         run: ./gradlew :app:assembleRelease --no-daemon
 
@@ -46,8 +64,43 @@ jobs:
           echo "签名校验通过 ✓"
           "$APKSIGNER" verify --print-certs "$APK" | sed -n '1,8p'
 
-      - name: Upload Release APK
+      # 重命名成规范产物名：ApkVerTool-v<版本>.apk
+      - name: Rename APK
+        id: apk
+        run: |
+          set -e
+          SRC=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          OUT="app/build/outputs/apk/release/ApkVerTool-v${{ steps.ver.outputs.name }}.apk"
+          mv "$SRC" "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          ls -la app/build/outputs/apk/release/
+
+      - name: Upload Release APK (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: apk-release
           path: app/build/outputs/apk/release/*.apk
+
+      # 打 v* 标签或手动触发时，顺便发成 GitHub Release（用官方 gh CLI，无第三方依赖）。
+      # push 到 main 的日常构建只上传 artifact，不发版，避免每次提交都产生 Release。
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          TAG="${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.tag }}"
+          APK="${{ steps.apk.outputs.path }}"
+          echo "发布 $TAG <- $APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "该 Release 已存在，覆盖上传 APK"
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --title "ApkVerTool v${{ steps.ver.outputs.name }}" \
+              --notes "ApkVerTool v${{ steps.ver.outputs.name }}（versionCode ${{ steps.ver.outputs.code }}）
+
+          产物已用仓库内置 \`signkey.p12\` 签名，可直接安装。
+          更新内容见仓库根目录 \`CHANGELOG.md\`。" \
+              --latest
+          fi
