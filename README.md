@@ -9,7 +9,7 @@ UI 提供两套完整界面：**[Miuix](https://github.com/compose-miuix-ui/miui
 ![Android](https://img.shields.io/badge/Android-13%2B%20(API%2033)-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%2B%20Miuix%20%2F%20Material%203-4285F4)
-![License](https://img.shields.io/badge/License-GPL--3.0-blue)
+![License](https://img.shields.io/badge/License-Apache--2.0-blue)
 
 <br>
 
@@ -215,6 +215,18 @@ git push origin v2.2.0
 
 ## 📄 许可证
 
-GNU General Public License v3.0
+Apache License 2.0（见仓库根目录 `LICENSE`）
 
-第三方库版权声明见各依赖自身许可证；vendored 的 miuix nav 库来自 [compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix)。
+开源引用：
+
+- `libs/apksig.jar` — Android apksig（Apache-2.0）
+- [Miuix](https://github.com/compose-miuix-ui/miuix) — HyperOS 风格 Compose 组件库（Apache-2.0）
+- vendored 的 `top.yukonga.miuix.kmp.nav` — 同上，来自 Miuix 的官方导航库
+- [kyant backdrop / shapes](https://github.com/Kyant0/AndroidLiquidGlass) — 液态玻璃背景采样与折射
+- Material 3 / Jetpack Compose — AndroidX（Apache-2.0）
+
+各依赖的完整版权声明沿用其自身许可证。
+
+---
+
+开发者：Seagull（海鸥）
