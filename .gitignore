@@ -11,3 +11,21 @@ local.properties
 # 旧手搓构建链的产物
 build/
 dex/
+
+# ── 本仓库补充（上游简化版 .gitignore 没带的）──
+# AI 工作区笔记，不是项目文档
+.workbuddy/
+
+# 归档 / 预编译产物（需要就放 GitHub Release，别塞进仓库）
+dist/
+*.apk
+*.aab
+*.apks
+*.xapk
+
+# 杂项
+*.log
+*.hprof
+__pycache__/
+*.pyc
+.DS_Store
