@@ -5,7 +5,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// ---- version.py 是版本号唯一真源（CI 的 Read version 步骤也是读它）----
+val avtVersionPy = rootProject.file("version.py").readText()
+val avtVersionName = Regex("VERSION_NAME\\s*=\\s*\"([^\"]+)\"").find(avtVersionPy)!!.groupValues[1]
+val avtVersionCode = Regex("VERSION_CODE\\s*=\\s*(\\d+)").find(avtVersionPy)!!.groupValues[1].toInt()
+
 android {
+
     namespace = "com.seagull.avt"
     // miuix 0.9.4-rc01 / Compose 1.12.0-rc01 的 AAR 元数据要求 compileSdk ≥ 37
     compileSdk = 37
@@ -18,8 +24,8 @@ android {
         targetSdk = 36
         // 与 version.py 单一真源保持一致（2.0.3 / 26）
         // 相对上游 v2.1.0 递增（上游是 27 / 2.1.0），避免版本号倒退
-        versionCode = 28
-        versionName = "2.2.0"
+        versionCode = avtVersionCode
+        versionName = avtVersionName
     }
 
     // 签名配置：照抄原版 ApkVerTool —— 直接用仓库内置的 signkey.p12
