@@ -5,100 +5,237 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
 <meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
+<meta name="theme-color" content="#4c6ef5">
+<link rel="icon" href="./assets/icon.png">
 <style>
-  :root { color-scheme: light dark; --fg:#1b1b1f; --bg:#fdfcff; --muted:#5a5a63; --line:#e3e1e8; --card:#f4f3f8; --accent:#4c6ef5; }
+  :root {
+    color-scheme: light dark;
+    --fg:#16161a; --bg:#fbfbff; --muted:#5c5c66; --line:#e6e4ec; --card:#ffffff;
+    --soft:#f3f2f8; --accent:#4c6ef5; --accent2:#8b5cf6; --shadow:0 8px 30px rgba(24,24,40,.08);
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --fg:#e5e2e9; --bg:#131316; --muted:#9d9aa4; --line:#2f2e34; --card:#1d1c21; --accent:#8ea1ff; }
+    :root { --fg:#e9e7ee; --bg:#101014; --muted:#a3a0ac; --line:#2a2a32; --card:#17171c;
+      --soft:#1e1e25; --accent:#8ea1ff; --accent2:#b79cff; --shadow:0 10px 34px rgba(0,0,0,.45); }
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body { margin:0; background:var(--bg); color:var(--fg);
-    font: 16px/1.75 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
-  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: .3px; }
-  h2 { font-size: 18px; margin: 38px 0 12px; }
-  h3 { font-size: 16px; margin: 22px 0 6px; }
-  .date { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
-  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 14px; }
-  .btn { display:inline-block; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line);
-    text-decoration: none; color: var(--fg); font-weight: 600; font-size: 15px; }
-  .btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
-  .kv { display:flex; gap:10px; flex-wrap:wrap; font-size: 14px; color: var(--muted); margin-top: 6px; }
-  code { background: rgba(127,127,127,.14); border-radius: 6px; padding: 2px 6px;
-    font-size: 13px; word-break: break-all; }
-  ul { padding-left: 22px; margin: 6px 0 0; }
-  li { margin: 3px 0; }
-  a.plain { color: var(--accent); }
-  .warn { font-size: 14px; color: var(--muted); }
-  footer { color: var(--muted); font-size: 13px; margin-top: 44px; border-top: 1px solid var(--line); padding-top: 16px; }
+    font: 16px/1.7 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  main { max-width: 980px; margin: 0 auto; padding: 0 22px 72px; }
+  a { color: var(--accent); }
+
+  /* ── 顶栏 ── */
+  header.top { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(14px);
+    background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
+  .top-in { max-width: 980px; margin: 0 auto; padding: 10px 22px; display: flex; align-items: center; gap: 12px; }
+  .top-in img { width: 28px; height: 28px; border-radius: 9px; }
+  .top-in b { font-size: 16px; letter-spacing: .2px; }
+  nav { margin-left: auto; display: flex; gap: 18px; font-size: 14.5px; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--fg); }
+  @media (max-width: 620px) { nav { display: none; } }
+
+  /* ── Hero ── */
+  .hero { position: relative; padding: 64px 0 8px; text-align: center; overflow: hidden; }
+  .hero::before, .hero::after { content:""; position:absolute; border-radius:50%; filter: blur(70px); opacity:.5; z-index:-1; }
+  .hero::before { width: 420px; height: 420px; left: -120px; top: -160px;
+    background: radial-gradient(circle, var(--accent), transparent 70%); }
+  .hero::after { width: 460px; height: 460px; right: -140px; top: -120px;
+    background: radial-gradient(circle, var(--accent2), transparent 70%); }
+  .hero img.app { width: 92px; height: 92px; border-radius: 24px; box-shadow: var(--shadow); }
+  h1 { font-size: clamp(30px, 5vw, 44px); margin: 18px 0 8px; letter-spacing: -.5px; }
+  .lead { color: var(--muted); font-size: 17px; margin: 0 auto 22px; max-width: 620px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom: 26px; }
+  .chip { font-size: 12.5px; color: var(--muted); background: var(--soft);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
+  .btns { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .btn { display:inline-flex; align-items:center; gap:9px; padding: 13px 20px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--card); color: var(--fg);
+    text-decoration:none; font-weight: 650; font-size: 15px; box-shadow: var(--shadow);
+    transition: transform .16s ease, box-shadow .16s ease; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .btn.ghost svg { fill: currentColor; stroke: none; }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff; }
+  .btn .sub { font-weight: 500; font-size: 13px; opacity: .78; margin-left: 2px; }
+
+  .meta { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center;
+    margin: 22px 0 6px; font-size: 14px; color: var(--muted); }
+  .meta strong { color: var(--fg); }
+  details.sha { max-width: 720px; margin: 12px auto 0; font-size: 13px; color: var(--muted); }
+  details.sha summary { cursor: pointer; }
+  details.sha code { display:inline-block; margin-top:6px; padding: 6px 9px; border-radius: 8px;
+    background: var(--soft); word-break: break-all; }
+
+  /* ── 通用 ── */
+  section { margin-top: 74px; }
+  h2 { font-size: 23px; margin: 0 0 6px; letter-spacing: -.2px; }
+  h2 + .hint { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; }
+
+  .grid { display:grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 16px;
+    box-shadow: var(--shadow); transition: transform .18s ease; }
+  .card:hover { transform: translateY(-3px); }
+  .card h3 { font-size: 16px; margin: 10px 0 4px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .ico { width: 34px; height: 34px; border-radius: 11px; display:grid; place-items:center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .ico svg { width: 19px; height: 19px; fill:none; stroke:#fff; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── 截图 ── */
+  .shots { display:flex; gap: 16px; overflow-x: auto; padding: 6px 2px 14px; scroll-snap-type: x mandatory; }
+  .shot { flex: 0 0 auto; width: 236px; margin: 0; scroll-snap-align: center; }
+  .shot img { width: 100%; border-radius: 22px; border: 1px solid var(--line);
+    box-shadow: var(--shadow); display:block; }
+  .shot figcaption { font-size: 13px; color: var(--muted); margin-top: 9px; }
+  .shot figcaption strong { color: var(--fg); }
+
+  /* ── 更新日志 ── */
+  .ver { border-left: 2px solid var(--line); padding: 0 0 4px 18px; margin: 0 0 22px; position: relative; }
+  .ver.now { border-color: var(--accent); }
+  .ver header { display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
+  .vtag { font-weight: 700; font-size: 15px; }
+  .vdate { color: var(--muted); font-size: 13px; }
+  .ver ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; }
+  .ver li { margin: 3px 0; }
+
+  footer { margin-top: 76px; padding-top: 20px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 13.5px; display:flex; flex-wrap:wrap; gap: 14px; }
+  footer span.sp { margin-left: auto; }
 </style>
 </head>
 <body>
-<main>
-  <h1>ApkVerTool</h1>
-  <p class="sub">安卓 APK 清单查看与修改 · 条目增删 · 重打包重签名 —— 引擎全手写，不依赖 apktool / aapt2</p>
 
-  <div class="card">
-    <div class="kv"><span>当前版本</span><strong>v2.3.3</strong><span>（versionCode 33）</span><span>· 3.75 MB</span></div>
-    <div class="btns">
-      <a class="btn primary" href="https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@7446579ee74f7ccff2d03ffd6dec6c99aeaa8572/dist/ApkVerTool-v2.3.3.apk">国内直链下载（jsDelivr）</a>
-      <a class="btn" href="https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.3/ApkVerTool-v2.3.3.apk">GitHub Release 下载</a>
+<header class="top">
+  <div class="top-in">
+    <img src="./assets/icon.png" alt="">
+    <b>ApkVerTool</b>
+    <nav>
+      <a href="#dl">下载</a>
+      <a href="#feat">功能</a>
+      <a href="#shots">界面</a>
+      <a href="#log">更新日志</a>
+      <a href="https://github.com/PXIAOHE/ApkVerTool">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero" id="dl">
+    <img class="app" src="./assets/icon.png" alt="ApkVerTool 图标">
+    <h1>ApkVerTool</h1>
+    <p class="lead">安卓 APK 清单查看与修改 · 条目增删 · 重打包重签名<br>引擎全手写：AXML / resources.arsc / DEX / ZIP 四个格式自己读写，不依赖 apktool、aapt2</p>
+    <div class="chips">
+      <span class="chip">纯自研引擎</span>
+      <span class="chip">无广告 · 无统计 · 无账号</span>
+      <span class="chip">两套界面热切换</span>
+      <span class="chip">Apache-2.0 开源</span>
     </div>
-    <div class="kv"><span>SHA-256</span><code>33a363938574f0130824143f565e9722058757cbeee9e904ad858af8fc14cd3f</code></div>
-    <p class="warn">系统要求：Android 13（API 33） 及以上。下载后直接安装；首次安装需在系统里允许「未知来源」。 下载后可自行核对上面的 SHA-256。</p>
+    <div class="btns">
+      <a class="btn primary" href="https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@0fcd6448e03ea30d726cc46b791c5625c28e370d/dist/ApkVerTool-v2.3.4.apk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>国内直链下载<span class="sub">jsDelivr 加速</span></a>
+      <a class="btn ghost" href="https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.4/ApkVerTool-v2.3.4.apk"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>GitHub Release</a>
+    </div>
+    <div class="meta">
+      <span>当前版本 <strong>v2.3.4</strong>（code 34）</span><span>· 3.77 MB</span>
+      <span>· Android 13（API 33） 及以上</span>
+    </div>
+    <details class="sha"><summary>校验值 SHA-256</summary><code>7571bf83de1bdaf4ea16a5684a11a726a72b88984c9d3f1f2ba02534ddbe3fb1</code></details>
   </div>
 
-  <h2>更新日志</h2>
-      <section class="ver">
-        <h3>v2.3.3 <span class="date">2026-10-12</span></h3>
-        <ul>
-        <li>MiuixX 关于页「检查更新」的副标题只留「当前 v…（code …）」，去掉逗号后面那句「点一下问一次服务器」</li>
-        </ul>
-      </section>
-      <section class="ver">
-        <h3>v2.3.2 <span class="date">2026-10-12</span></h3>
-        <ul>
-        <li>补上 2.3.0 更新日志里承诺、但当时没做的「设置里也能手动查」：关于页新增「检查更新」</li>
-        <li>MiuixX 与 MD3 两套界面都有入口，检查完给一句结果（发现新版本 / 已是最新 / 失败原因）</li>
-        <li>更新清单换成 v2.3.1 的发布内容与 sha256</li>
-        </ul>
-      </section>
-      <section class="ver">
-        <h3>v2.3.1 <span class="date">2026-10-12</span></h3>
-        <ul>
-        <li>修复：更新检查只信 jsDelivr 清单，而它给 @main 最长 12 小时缓存，发新版后半天才会被发现</li>
-        <li>现在清单没报新版时再问一次 GitHub Releases API，两边取版本更高的那个；清单已经报出新版就只发一个请求</li>
-        <li>清单补上发版包 sha256（v2.3.0 的 CI 产物）</li>
-        </ul>
-      </section>
-      <section class="ver">
-        <h3>v2.3.0 <span class="date">2026-10-12</span></h3>
-        <ul>
-        <li>新增内置更新检查：冷启动自动查一次（12 小时缓存），设置里也能手动查</li>
-        <li>发现新版本弹提示，带更新内容；可「稍后」或「忽略此版本」（同一版本不再打扰）</li>
-        <li>更新清单走 jsDelivr，取不到自动退 GitHub Releases API；版本按 versionCode 比较</li>
-        </ul>
-      </section>
+  <section id="feat">
+    <h2>功能</h2>
+    <p class="hint">选 APK → 改清单 → 增删条目 → 对齐重打包 → 重签名，输出可直接安装的新包；也支持 XAPK / APKS / split 多包容器。</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div>
+        <h3>清单改写</h3>
+        <p>versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名，属性缺失会自动补齐。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="m8 6 4-3 4 3M12 3v9M5 13v6h14v-6"/></svg></div>
+        <h3>包名联动</h3>
+        <p>一次改包名，四处同步：AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池、.so 等长替换。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM9 7V5h6v2M10 12h4"/></svg></div>
+        <h3>条目增删</h3>
+        <p>替换 / 新增 / 删除包内任意条目或目录前缀，重打包保留原 extra field，支持 Zip64。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v8m0 0 5 3m-5-3-5 3M5 21h14M6 12v5h12v-5"/></svg></div>
+        <h3>重打包对齐</h3>
+        <p>4 字节与 16KB 页对齐体检，签名前能看清每一段是否合规。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>重签名</h3>
+        <p>V1 / V2 / V3 / V4 可分别开关，内置 PKCS#12 密钥管理，产物可直接安装。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 20V9m7 11V4m7 16v-7"/></svg></div>
+        <h3>体检</h3>
+        <p>包名 / 版本 / SDK / DEX / ABI / 权限统计、加固壳识别、签名者证书指纹与有效期。</p>
+      </div>
+    </div>
+  </section>
 
-  <h2>能做什么</h2>
-  <ul>
-    <li>改 versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名</li>
-    <li>增删 APK 内任意条目或目录前缀，支持 XAPK / APKS / split 多包容器逐个处理并回填元数据</li>
-    <li>体检：版本、SDK、DEX、ABI、权限统计、加固壳识别、签名者证书指纹</li>
-    <li>V1 / V2 / V3 / V4 重签名，重打包保持 4 字节与 16KB 对齐，产物可直接安装</li>
-    <li>两套界面（MiuixX / Material 3）、莫奈取色、液态玻璃栏体</li>
-  </ul>
 
-  <h2>链接</h2>
-  <ul>
-    <li><a class="plain" href="https://github.com/PXIAOHE/ApkVerTool">GitHub 仓库（源码 / 问题反馈）</a></li>
-    <li><a class="plain" href="./privacy.html">隐私政策</a></li>
-    <li><a class="plain" href="https://github.com/PXIAOHE/ApkVerTool/releases">全部历史版本</a></li>
-  </ul>
+
+  <section id="log">
+    <h2>更新日志</h2>
+    <p class="hint">完整历史见 <a href="https://github.com/PXIAOHE/ApkVerTool/blob/main/CHANGELOG.md">CHANGELOG.md</a>。</p>
+      <article class="ver" class="now">
+        <header><span class="vtag">v2.3.4</span><span class="chip">最新</span><span class="vdate">2026-10-12</span></header>
+        <ul>
+          <li>更新提示里的「去下载」改走国内直链（jsDelivr，commit 锁定），拉不动自动退回 GitHub Release</li>
+          <li>关于页新增「官网」入口；官网已上线：更新日志、国内直链下载、sha256 校验都在上面</li>
+          <li>清单新增 apk_url_cdn 字段，App 优先用它——不再受 GitHub 在国内的连通性影响</li>
+        </ul>
+      </article>
+      <article class="ver">
+        <header><span class="vtag">v2.3.3</span><span class="vdate">2026-10-12</span></header>
+        <ul>
+          <li>MiuixX 关于页「检查更新」的副标题只留「当前 v…（code …）」，去掉逗号后面那句「点一下问一次服务器」</li>
+        </ul>
+      </article>
+      <article class="ver">
+        <header><span class="vtag">v2.3.2</span><span class="vdate">2026-10-12</span></header>
+        <ul>
+          <li>补上 2.3.0 更新日志里承诺、但当时没做的「设置里也能手动查」：关于页新增「检查更新」</li>
+          <li>MiuixX 与 MD3 两套界面都有入口，检查完给一句结果（发现新版本 / 已是最新 / 失败原因）</li>
+          <li>更新清单换成 v2.3.1 的发布内容与 sha256</li>
+        </ul>
+      </article>
+      <article class="ver">
+        <header><span class="vtag">v2.3.1</span><span class="vdate">2026-10-12</span></header>
+        <ul>
+          <li>修复：更新检查只信 jsDelivr 清单，而它给 @main 最长 12 小时缓存，发新版后半天才会被发现</li>
+          <li>现在清单没报新版时再问一次 GitHub Releases API，两边取版本更高的那个；清单已经报出新版就只发一个请求</li>
+          <li>清单补上发版包 sha256（v2.3.0 的 CI 产物）</li>
+        </ul>
+      </article>
+      <article class="ver">
+        <header><span class="vtag">v2.3.0</span><span class="vdate">2026-10-12</span></header>
+        <ul>
+          <li>新增内置更新检查：冷启动自动查一次（12 小时缓存），设置里也能手动查</li>
+          <li>发现新版本弹提示，带更新内容；可「稍后」或「忽略此版本」（同一版本不再打扰）</li>
+          <li>更新清单走 jsDelivr，取不到自动退 GitHub Releases API；版本按 versionCode 比较</li>
+        </ul>
+      </article>
+  </section>
 
   <footer>
-    Apache-2.0 开源 · 仅用于处理你有权处理的 APK 文件 · 本页由 <code>scripts/gen_site.py</code> 依据 <code>version.py</code> 自动生成
+    <span>Apache-2.0 开源 · 仅用于处理你有权处理的 APK 文件</span>
+    <span class="sp">
+      <a href="./privacy.html">隐私政策</a> ·
+      <a href="https://github.com/PXIAOHE/ApkVerTool">GitHub</a> ·
+      <a href="https://github.com/PXIAOHE/ApkVerTool/releases">历史版本</a> ·
+      <a href="https://github.com/PXIAOHE/ApkVerTool/issues">反馈</a>
+    </span>
   </footer>
 </main>
 </body>
