@@ -11,7 +11,9 @@ import java.net.URL
 /**
  * 内置更新检查。
  *
- * 清单优先走 jsDelivr（国内快），失败再退 GitHub Releases API（零维护）。
+ * 清单优先走 jsDelivr（国内快），失败或「清单说没新版」时再问 GitHub Releases API。
+ * 之所以不能只信清单：jsDelivr 对 @main 有最长 12h 的分支缓存，发新版后半天内它还在发旧数据
+ * （purge 只清文件缓存、查询串也不起作用），只问清单会让更新延迟半天才被发现。
  * 比较 versionCode，不是版本名字符串。网络请求请放在 IO 线程调 [check]。
  */
 object UpdateChecker {
@@ -86,7 +88,11 @@ object UpdateChecker {
         lastError = null
         android.util.Log.i("AvtUpdate", "开始检查（本地 " + AvtVersion.NAME + "）")
         try {
-            val info = fetchManifest() ?: fetchFromApi()
+            // 先问清单；只有「清单没报出新版」时才去问 API 兜底，避免每次检查都发两个请求。
+            var info = tryOrNull { fetchManifest() }
+            if (info == null || !info.isNewer) {
+                info = pick(info, tryOrNull { fetchFromApi() })
+            }
             markChecked(ctx)
             val ignored = ctx.getSharedPreferences(PREF, 0).getString("ignored_name", "")
             latest = info?.takeIf { it.isNewer && it.name != ignored }
@@ -100,6 +106,22 @@ object UpdateChecker {
         } finally {
             checking = false
         }
+    }
+
+    /** 单个来源失败不该拖垮整次检查：吞掉异常，返回 null 让另一个来源顶上。 */
+    private inline fun <T> tryOrNull(block: () -> T?): T? = try {
+        block()
+    } catch (e: Exception) {
+        android.util.Log.w("AvtUpdate", "来源失败: " + (e.message ?: e.javaClass.simpleName))
+        null
+    }
+
+    /** 清单和 API 都有结果时，取版本更高的那个；一样高就用清单（字段更全）。 */
+    private fun pick(manifest: Info?, api: Info?): Info? = when {
+        manifest == null -> api
+        api == null -> manifest
+        semverGreater(api.name, manifest.name) -> api
+        else -> manifest
     }
 
     private fun fetchManifest(): Info? {
