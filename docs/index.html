@@ -103,9 +103,10 @@
   .ver ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; }
   .ver li { margin: 3px 0; }
 
-  footer { margin-top: 76px; padding-top: 20px; border-top: 1px solid var(--line);
-    color: var(--muted); font-size: 13.5px; display:flex; flex-wrap:wrap; gap: 14px; }
-  footer span.sp { margin-left: auto; }
+  footer { margin-top: 76px; padding-top: 22px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 13.5px; display:flex; flex-direction: column;
+    align-items: center; text-align: center; gap: 8px; }
+  footer span.sp { display:flex; flex-wrap:wrap; gap: 6px; justify-content: center; }
 </style>
 </head>
 <body>
@@ -183,7 +184,23 @@
     </div>
   </section>
 
-
+  <section id="shots">
+    <h2>界面</h2>
+    <div class="shots">
+      <figure class="shot">
+        <img src="./assets/screen-about.jpg" alt="关于 界面截图" loading="lazy">
+        <figcaption><strong>关于</strong>　内置更新检查与官网入口，点一下就能拿到国内直链新版本</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="./assets/screen-look.jpg" alt="外观 界面截图" loading="lazy">
+        <figcaption><strong>外观</strong>　MiuixX 与 Material 3 两套界面热切换，莫奈取色 + 液态玻璃栏体</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="./assets/screen-write.jpg" alt="改写 界面截图" loading="lazy">
+        <figcaption><strong>改写</strong>　版本号 / versionCode / SDK / 包名，一处改，dex 与 arsc 一起联动</figcaption>
+      </figure>
+    </div>
+  </section>
 
   <section id="log">
     <h2>更新日志</h2>
