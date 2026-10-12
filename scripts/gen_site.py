@@ -74,15 +74,16 @@ def build_shots():
         name = os.path.basename(f)
         title, desc = SHOT_CAPTIONS.get(name, (name, ""))
         figs.append(
-            '      <figure class="shot">\n'
+            '      <figure class="shot reveal">\n'
             '        <img src="./assets/%s" alt="%s 界面截图" loading="lazy">\n'
             '        <figcaption><strong>%s</strong>%s</figcaption>\n'
             '      </figure>' % (html.escape(name), html.escape(title),
                                   html.escape(title),
                                   ("　" + html.escape(desc)) if desc else "")
         )
-    return ('  <section id="shots">\n'
-            '    <h2>界面</h2>\n'
+    return ('  <section id="shots" class="reveal">\n'
+            '    <div class="sec-head"><span class="tag">// screenshots</span><h2>界面</h2></div>\n'
+            '    <p class="hint">真机截图（MiuixX · 深色）。设置里可热切到 Material 3 界面。</p>\n'
             '    <div class="shots">\n%s\n    </div>\n'
             '  </section>' % "\n".join(figs))
 

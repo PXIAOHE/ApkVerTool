@@ -5,116 +5,194 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
 <meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
-<meta name="theme-color" content="#4c6ef5">
+<meta name="theme-color" content="#0a0a12">
 <link rel="icon" href="./assets/icon.png">
 <style>
   :root {
-    color-scheme: light dark;
-    --fg:#16161a; --bg:#fbfbff; --muted:#5c5c66; --line:#e6e4ec; --card:#ffffff;
-    --soft:#f3f2f8; --accent:#4c6ef5; --accent2:#8b5cf6; --shadow:0 8px 30px rgba(24,24,40,.08);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --fg:#e9e7ee; --bg:#101014; --muted:#a3a0ac; --line:#2a2a32; --card:#17171c;
-      --soft:#1e1e25; --accent:#8ea1ff; --accent2:#b79cff; --shadow:0 10px 34px rgba(0,0,0,.45); }
+    color-scheme: dark;
+    --bg:#07070d; --bg2:#0c0c17; --fg:#eae8f5; --muted:#9a97ad;
+    --line:rgba(140,140,200,.16); --card:rgba(22,22,36,.66); --card2:rgba(30,30,48,.5);
+    --cy:#4de1ff; --vi:#a06bff; --mg:#ff5cc8; --gr:#5cffa8;
+    --accent:#4de1ff; --glow:0 0 24px rgba(77,225,255,.28);
+    --dot:rgba(120,140,255,.55);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-    font: 16px/1.7 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  body { margin:0; background:var(--bg); color:var(--fg); overflow-x:hidden;
+    font: 16px/1.7 "SF Mono", ui-monospace, -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     -webkit-font-smoothing: antialiased; }
-  main { max-width: 980px; margin: 0 auto; padding: 0 22px 72px; }
-  a { color: var(--accent); }
+  a { color: var(--cy); text-decoration: none; }
+
+  /* ── 背景：粒子网格 + 网格线 + 鼠标光斑 ── */
+  #bg { position: fixed; inset:0; z-index:0; pointer-events:none; }
+  .grid-overlay { position: fixed; inset:0; z-index:1; pointer-events:none; opacity:.5;
+    background-image: linear-gradient(rgba(120,140,255,.055) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(120,140,255,.055) 1px, transparent 1px);
+    background-size: 46px 46px, 46px 46px;
+    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%); }
+  .spot { position: fixed; inset:0; z-index:2; pointer-events:none;
+    background: radial-gradient(420px circle at var(--mx,50%) var(--my,20%), rgba(77,225,255,.10), transparent 62%); }
+  .scan { position: fixed; left:0; right:0; height:150px; z-index:3; pointer-events:none; opacity:.5;
+    background: linear-gradient(180deg, transparent, rgba(77,225,255,.045), transparent);
+    animation: scan 9s linear infinite; }
+  @keyframes scan { 0% { transform: translateY(-160px); } 100% { transform: translateY(100vh); } }
+
+  main { position: relative; z-index:5; max-width: 1040px; margin: 0 auto; padding: 0 22px 90px; }
 
   /* ── 顶栏 ── */
-  header.top { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(14px);
-    background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
-  .top-in { max-width: 980px; margin: 0 auto; padding: 10px 22px; display: flex; align-items: center; gap: 12px; }
-  .top-in img { width: 28px; height: 28px; border-radius: 9px; }
-  .top-in b { font-size: 16px; letter-spacing: .2px; }
-  nav { margin-left: auto; display: flex; gap: 18px; font-size: 14.5px; }
-  nav a { color: var(--muted); text-decoration: none; }
-  nav a:hover { color: var(--fg); }
-  @media (max-width: 620px) { nav { display: none; } }
+  header.top { position: sticky; top:0; z-index:40; backdrop-filter: blur(16px) saturate(140%);
+    background: color-mix(in srgb, var(--bg) 72%, transparent); border-bottom: 1px solid var(--line); }
+  .top-in { max-width: 1040px; margin:0 auto; padding: 11px 22px; display:flex; align-items:center; gap:12px; }
+  .top-in img { width:28px; height:28px; border-radius:9px; box-shadow: 0 0 16px rgba(77,225,255,.35); }
+  .top-in b { font-size:15px; letter-spacing:.14em; text-transform: uppercase; }
+  .live { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gr);
+    border:1px solid rgba(92,255,168,.3); border-radius:999px; padding:2px 9px; letter-spacing:.08em; }
+  .live i { width:6px; height:6px; border-radius:50%; background:var(--gr); box-shadow:0 0 8px var(--gr);
+    animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.35; transform:scale(.7);} }
+  nav { margin-left:auto; display:flex; gap:20px; font-size:13.5px; }
+  nav a { color:var(--muted); position:relative; }
+  nav a::after { content:""; position:absolute; left:0; right:100%; bottom:-5px; height:1px;
+    background: linear-gradient(90deg,var(--cy),var(--vi)); transition: right .28s ease; }
+  nav a:hover { color:var(--fg); }
+  nav a:hover::after { right:0; }
+  @media (max-width: 700px) { nav { display:none; } }
 
   /* ── Hero ── */
-  .hero { position: relative; padding: 64px 0 8px; text-align: center; overflow: hidden; }
-  .hero::before, .hero::after { content:""; position:absolute; border-radius:50%; filter: blur(70px); opacity:.5; z-index:-1; }
-  .hero::before { width: 420px; height: 420px; left: -120px; top: -160px;
-    background: radial-gradient(circle, var(--accent), transparent 70%); }
-  .hero::after { width: 460px; height: 460px; right: -140px; top: -120px;
-    background: radial-gradient(circle, var(--accent2), transparent 70%); }
-  .hero img.app { width: 92px; height: 92px; border-radius: 24px; box-shadow: var(--shadow); }
-  h1 { font-size: clamp(30px, 5vw, 44px); margin: 18px 0 8px; letter-spacing: -.5px; }
-  .lead { color: var(--muted); font-size: 17px; margin: 0 auto 22px; max-width: 620px; }
-  .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom: 26px; }
-  .chip { font-size: 12.5px; color: var(--muted); background: var(--soft);
-    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
+  .hero { padding: 78px 0 10px; text-align:center; position:relative; }
+  .app-ico { width:104px; height:104px; border-radius:26px; position:relative;
+    box-shadow: 0 0 0 1px rgba(140,160,255,.25), 0 0 40px rgba(77,225,255,.28), 0 18px 50px rgba(0,0,0,.6); }
+  .app-ico::after { content:""; position:absolute; inset:-14px; border-radius:34px; z-index:-1;
+    background: conic-gradient(from 0deg, var(--cy), var(--vi), var(--mg), var(--cy));
+    filter: blur(18px); opacity:.42; animation: spin 8s linear infinite; }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  h1 { font-size: clamp(34px, 7vw, 62px); margin: 22px 0 10px; letter-spacing:-.02em; font-weight:800;
+    background: linear-gradient(100deg, #fff 8%, var(--cy) 30%, var(--vi) 52%, #fff 78%);
+    background-size: 260% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation: sheen 6.5s linear infinite; }
+  @keyframes sheen { to { background-position: 260% 0; } }
+  .typed { color: var(--muted); font-size: 15.5px; min-height: 3.4em; margin: 0 auto 26px; max-width: 680px; }
+  .typed b { color: var(--cy); font-weight:600; }
+  .caret { display:inline-block; width:8px; height:1.05em; margin-left:2px; vertical-align:-2px;
+    background: var(--cy); box-shadow: var(--glow); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  .hud { display:inline-flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom: 24px; }
+  .hud span { font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+    border:1px solid var(--line); background: var(--card2); border-radius:7px; padding: 5px 10px; }
+
   .btns { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
-  .btn { display:inline-flex; align-items:center; gap:9px; padding: 13px 20px; border-radius: 14px;
-    border: 1px solid var(--line); background: var(--card); color: var(--fg);
-    text-decoration:none; font-weight: 650; font-size: 15px; box-shadow: var(--shadow);
-    transition: transform .16s ease, box-shadow .16s ease; }
-  .btn:hover { transform: translateY(-2px); }
-  .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9;
-    stroke-linecap: round; stroke-linejoin: round; }
-  .btn.ghost svg { fill: currentColor; stroke: none; }
-  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-color: transparent; color: #fff; }
-  .btn .sub { font-weight: 500; font-size: 13px; opacity: .78; margin-left: 2px; }
+  .btn { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:9px;
+    padding: 14px 22px; border-radius:13px; border:1px solid var(--line); background: var(--card);
+    color: var(--fg); font-weight:650; font-size:15px; backdrop-filter: blur(8px);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .btn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .btn.ghost svg { fill:currentColor; stroke:none; }
+  .btn:hover { transform: translateY(-3px); border-color: rgba(77,225,255,.5); box-shadow: 0 0 30px rgba(77,225,255,.22); }
+  .btn.primary { border-color: transparent; color:#04040a; font-weight:750;
+    background: linear-gradient(120deg, var(--cy), #8ee6ff 35%, var(--vi) 75%);
+    box-shadow: 0 0 34px rgba(77,225,255,.34), inset 0 0 20px rgba(255,255,255,.25); }
+  .btn.primary::after { content:""; position:absolute; top:0; bottom:0; width:38%; left:-40%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: sweep 3.2s ease-in-out infinite; }
+  @keyframes sweep { 0%{left:-40%;} 55%{left:120%;} 100%{left:120%;} }
+  .sub { font-weight:500; font-size:12.5px; opacity:.72; }
 
-  .meta { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center;
-    margin: 22px 0 6px; font-size: 14px; color: var(--muted); }
-  .meta strong { color: var(--fg); }
-  details.sha { max-width: 720px; margin: 12px auto 0; font-size: 13px; color: var(--muted); }
-  details.sha summary { cursor: pointer; }
-  details.sha code { display:inline-block; margin-top:6px; padding: 6px 9px; border-radius: 8px;
-    background: var(--soft); word-break: break-all; }
+  .strip { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center;
+    margin: 24px 0 0; font-size:13.5px; color:var(--muted); }
+  .strip strong { color:var(--fg); }
+  details.sha { max-width:760px; margin: 14px auto 0; font-size:12.5px; color:var(--muted); }
+  details.sha summary { cursor:pointer; letter-spacing:.06em; }
+  details.sha code { display:inline-block; margin-top:7px; padding:7px 10px; border-radius:8px;
+    background: var(--card2); border:1px solid var(--line); word-break:break-all; color:var(--cy); }
 
-  /* ── 通用 ── */
-  section { margin-top: 74px; }
-  h2 { font-size: 23px; margin: 0 0 6px; letter-spacing: -.2px; }
-  h2 + .hint { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; }
+  /* ── 区块标题 ── */
+  section { margin-top: 96px; }
+  .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:22px; }
+  .sec-head .tag { font-size:11.5px; letter-spacing:.18em; color:var(--cy); text-transform:uppercase; }
+  h2 { font-size: 26px; margin:0; letter-spacing:-.01em; }
+  .hint { color:var(--muted); font-size:14.5px; margin: 0 0 24px; }
 
-  .grid { display:grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 16px;
-    box-shadow: var(--shadow); transition: transform .18s ease; }
-  .card:hover { transform: translateY(-3px); }
-  .card h3 { font-size: 16px; margin: 10px 0 4px; }
-  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
-  .ico { width: 34px; height: 34px; border-radius: 11px; display:grid; place-items:center;
-    background: linear-gradient(135deg, var(--accent), var(--accent2)); }
-  .ico svg { width: 19px; height: 19px; fill:none; stroke:#fff; stroke-width: 1.9;
-    stroke-linecap: round; stroke-linejoin: round; }
+  /* ── 数字条 ── */
+  .stats { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .stat { border:1px solid var(--line); border-radius:16px; padding:18px 16px; background: var(--card);
+    backdrop-filter: blur(8px); text-align:center; }
+  .stat b { display:block; font-size:30px; line-height:1.1; color:#fff;
+    text-shadow: 0 0 22px rgba(77,225,255,.45); }
+  .stat span { font-size:12.5px; color:var(--muted); letter-spacing:.06em; }
+
+  /* ── 功能卡 ── */
+  .grid { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+  .card { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:18px;
+    padding:20px; background: var(--card); backdrop-filter: blur(9px);
+    transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
+  .card::before { content:""; position:absolute; inset:0; opacity:0; transition: opacity .25s ease;
+    background: radial-gradient(320px circle at var(--cx,50%) var(--cy2,0%), rgba(77,225,255,.13), transparent 60%); }
+  .card:hover { transform: translateY(-4px); border-color: rgba(77,225,255,.42);
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 26px rgba(77,225,255,.14); }
+  .card:hover::before { opacity:1; }
+  .card h3 { font-size:16.5px; margin: 12px 0 6px; }
+  .card p { margin:0; color:var(--muted); font-size:14.5px; }
+  .ico { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; position:relative;
+    background: linear-gradient(140deg, rgba(77,225,255,.22), rgba(160,107,255,.22));
+    border:1px solid rgba(140,160,255,.28); }
+  .ico svg { width:20px; height:20px; fill:none; stroke:var(--cy); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;
+    filter: drop-shadow(0 0 6px rgba(77,225,255,.6)); }
+  .card:hover .ico svg { animation: nudge .7s ease; }
+  @keyframes nudge { 50% { transform: translateY(-3px) scale(1.08); } }
 
   /* ── 截图 ── */
-  .shots { display:flex; gap: 16px; overflow-x: auto; padding: 6px 2px 14px; scroll-snap-type: x mandatory; }
-  .shot { flex: 0 0 auto; width: 236px; margin: 0; scroll-snap-align: center; }
-  .shot img { width: 100%; border-radius: 22px; border: 1px solid var(--line);
-    box-shadow: var(--shadow); display:block; }
-  .shot figcaption { font-size: 13px; color: var(--muted); margin-top: 9px; }
-  .shot figcaption strong { color: var(--fg); }
+  .shots { display:flex; gap:18px; overflow-x:auto; padding: 8px 2px 16px; scroll-snap-type:x mandatory; }
+  .shot { flex:0 0 auto; width:238px; margin:0; scroll-snap-align:center; }
+  .shot img { width:100%; border-radius:20px; display:block; border:1px solid rgba(140,160,255,.22);
+    box-shadow: 0 14px 40px rgba(0,0,0,.55), 0 0 26px rgba(77,225,255,.12);
+    transition: transform .25s ease, box-shadow .25s ease; }
+  .shot:hover img { transform: translateY(-6px) scale(1.015); box-shadow: 0 22px 54px rgba(0,0,0,.6), 0 0 34px rgba(77,225,255,.24); }
+  .shot figcaption { font-size:12.5px; color:var(--muted); margin-top:10px; }
+  .shot figcaption strong { color:var(--fg); }
 
   /* ── 更新日志 ── */
-  .ver { border-left: 2px solid var(--line); padding: 0 0 4px 18px; margin: 0 0 22px; position: relative; }
-  .ver.now { border-color: var(--accent); }
-  .ver header { display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
-  .vtag { font-weight: 700; font-size: 15px; }
-  .vdate { color: var(--muted); font-size: 13px; }
-  .ver ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; }
-  .ver li { margin: 3px 0; }
+  .ver { position:relative; border-left:1px solid var(--line); padding: 2px 0 6px 22px; margin-bottom:24px; }
+  .ver::before { content:""; position:absolute; left:-4.5px; top:8px; width:8px; height:8px; border-radius:50%;
+    background: var(--muted); box-shadow: 0 0 0 4px rgba(140,140,200,.08); }
+  .ver.now { border-image: linear-gradient(180deg, var(--cy), transparent) 1; }
+  .ver.now::before { background: var(--cy); box-shadow: 0 0 14px var(--cy); }
+  .ver header { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+  .vtag { font-weight:750; font-size:15.5px; letter-spacing:.02em; }
+  .vdate { color:var(--muted); font-size:12.5px; }
+  .chip { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#04040a;
+    background: linear-gradient(120deg,var(--cy),var(--vi)); border-radius:6px; padding:2px 7px; font-weight:700; }
+  .ver ul { margin:0; padding-left:16px; color:var(--muted); font-size:14.5px; }
+  .ver li { margin:4px 0; }
 
-  footer { margin-top: 76px; padding-top: 22px; border-top: 1px solid var(--line);
-    color: var(--muted); font-size: 13.5px; display:flex; flex-direction: column;
-    align-items: center; text-align: center; gap: 8px; }
-  footer span.sp { display:flex; flex-wrap:wrap; gap: 6px; justify-content: center; }
+  footer { margin-top:96px; padding-top:24px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:13px; display:flex; flex-direction:column; align-items:center;
+    text-align:center; gap:9px; }
+  footer span.sp { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+
+  /* ── 滚动显现 ── */
+  .reveal { opacity:0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity:1; transform:none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .reveal { opacity:1; transform:none; }
+    #bg, .scan { display:none; }
+  }
 </style>
 </head>
 <body>
+<canvas id="bg"></canvas>
+<div class="grid-overlay"></div>
+<div class="spot" id="spot"></div>
+<div class="scan"></div>
 
 <header class="top">
   <div class="top-in">
     <img src="./assets/icon.png" alt="">
     <b>ApkVerTool</b>
+    <span class="live"><i></i>BUILD OK</span>
     <nav>
       <a href="#dl">下载</a>
       <a href="#feat">功能</a>
@@ -127,56 +205,68 @@
 
 <main>
   <div class="hero" id="dl">
-    <img class="app" src="./assets/icon.png" alt="ApkVerTool 图标">
+    <img class="app-ico" src="./assets/icon.png" alt="ApkVerTool 图标">
     <h1>ApkVerTool</h1>
-    <p class="lead">安卓 APK 清单查看与修改 · 条目增删 · 重打包重签名<br>引擎全手写：AXML / resources.arsc / DEX / ZIP 四个格式自己读写，不依赖 apktool、aapt2</p>
-    <div class="chips">
-      <span class="chip">纯自研引擎</span>
-      <span class="chip">无广告 · 无统计 · 无账号</span>
-      <span class="chip">两套界面热切换</span>
-      <span class="chip">Apache-2.0 开源</span>
+    <p class="typed" id="typed"></p>
+
+    <div class="hud">
+      <span>Version {{NAME}}</span>
+      <span>Code {{CODE}}</span>
+      <span>Engine · Self-built</span>
+      <span>Android 13+</span>
     </div>
+
     <div class="btns">
       {{CDN_BTN}}
       {{GH_BTN}}
     </div>
-    <div class="meta">
+
+    <div class="strip">
       <span>当前版本 <strong>v{{NAME}}</strong>（code {{CODE}}）</span>{{SIZE_PART}}
       <span>· {{MIN_ANDROID}} 及以上</span>
     </div>
     {{SHA_LINE}}
   </div>
 
-  <section id="feat">
-    <h2>功能</h2>
+  <section id="stat" class="reveal">
+    <div class="stats">
+      <div class="stat"><b data-count="4">0</b><span>手写格式引擎</span></div>
+      <div class="stat"><b data-count="2">0</b><span>完整界面套数</span></div>
+      <div class="stat"><b data-count="0">0</b><span>广告 / 统计 SDK</span></div>
+      <div class="stat"><b data-count="100" data-suffix="%">0</b><span>本地处理，不上传</span></div>
+    </div>
+  </section>
+
+  <section id="feat" class="reveal">
+    <div class="sec-head"><span class="tag">// features</span><h2>功能</h2></div>
     <p class="hint">选 APK → 改清单 → 增删条目 → 对齐重打包 → 重签名，输出可直接安装的新包；也支持 XAPK / APKS / split 多包容器。</p>
     <div class="grid">
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div>
         <h3>清单改写</h3>
-        <p>versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名，属性缺失会自动补齐。</p>
+        <p>versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名，属性缺失自动补齐。</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="m8 6 4-3 4 3M12 3v9M5 13v6h14v-6"/></svg></div>
         <h3>包名联动</h3>
-        <p>一次改包名，四处同步：AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池、.so 等长替换。</p>
+        <p>一次改包名四处同步：AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池、.so 等长替换。</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM9 7V5h6v2M10 12h4"/></svg></div>
         <h3>条目增删</h3>
-        <p>替换 / 新增 / 删除包内任意条目或目录前缀，重打包保留原 extra field，支持 Zip64。</p>
+        <p>替换 / 新增 / 删除包内任意条目或目录前缀；重打包保留原 extra field，支持 Zip64。</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v8m0 0 5 3m-5-3-5 3M5 21h14M6 12v5h12v-5"/></svg></div>
         <h3>重打包对齐</h3>
-        <p>4 字节与 16KB 页对齐体检，签名前能看清每一段是否合规。</p>
+        <p>4 字节与 16KB 页对齐体检，签名前就能看清每一段是否合规。</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <h3>重签名</h3>
         <p>V1 / V2 / V3 / V4 可分别开关，内置 PKCS#12 密钥管理，产物可直接安装。</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 20V9m7 11V4m7 16v-7"/></svg></div>
         <h3>体检</h3>
         <p>包名 / 版本 / SDK / DEX / ABI / 权限统计、加固壳识别、签名者证书指纹与有效期。</p>
@@ -186,8 +276,8 @@
 
 {{SHOTS}}
 
-  <section id="log">
-    <h2>更新日志</h2>
+  <section id="log" class="reveal">
+    <div class="sec-head"><span class="tag">// changelog</span><h2>更新日志</h2></div>
     <p class="hint">完整历史见 <a href="https://github.com/{{REPO}}/blob/main/CHANGELOG.md">CHANGELOG.md</a>。</p>
 {{CHANGELOG}}
   </section>
@@ -200,7 +290,156 @@
       <a href="https://github.com/{{REPO}}/releases">历史版本</a> ·
       <a href="https://github.com/{{REPO}}/issues">反馈</a>
     </span>
+    <span style="opacity:.7; font-size:12px">本页由 <code>scripts/gen_site.py</code> 依据 <code>version.py</code> 自动生成</span>
   </footer>
 </main>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── 打字机 ── */
+  var lines = [
+    '纯自研引擎：AXML / resources.arsc / DEX / ZIP <b>四个格式全部手写读写</b>',
+    '<b>改清单</b> · 删条目 · 对齐重打包 · <b>重签名</b>，一套流程走完',
+    '两套界面热切换 · 莫奈取色 · 液态玻璃栏体 · <b>无广告无统计</b>'
+  ];
+  var el = document.getElementById('typed'), li = 0, ci = 0, deleting = false;
+  function raw(html) { return html.replace(/<[^>]+>/g, ''); }
+  function render(text) {
+    // 逐字显示但保留 <b>：按字符切片后重新拼高亮段太啰嗦，这里按纯文本打字，
+    // 打完后整句换成带高亮的 HTML。
+    el.innerHTML = text + '<span class="caret"></span>';
+  }
+  function type() {
+    var full = lines[li], plain = raw(full);
+    if (!deleting) {
+      ci++;
+      render(plain.slice(0, ci));
+      if (ci >= plain.length) { el.innerHTML = full + '<span class="caret"></span>'; deleting = true; return setTimeout(type, 2200); }
+      return setTimeout(type, 26 + Math.random() * 40);
+    }
+    ci -= 2;
+    if (ci <= 0) { ci = 0; deleting = false; li = (li + 1) % lines.length; return setTimeout(type, 260); }
+    render(plain.slice(0, ci));
+    setTimeout(type, 14);
+  }
+  if (reduce) { el.innerHTML = lines[0]; } else { type(); }
+
+  /* ── 鼠标光斑 + 卡片局部高光 ── */
+  if (!reduce && window.matchMedia('(pointer: fine)').matches) {
+    var spot = document.getElementById('spot');
+    window.addEventListener('pointermove', function (e) {
+      spot.style.setProperty('--mx', e.clientX + 'px');
+      spot.style.setProperty('--my', e.clientY + 'px');
+    }, { passive: true });
+    document.querySelectorAll('.card').forEach(function (c) {
+      c.addEventListener('pointermove', function (e) {
+        var r = c.getBoundingClientRect();
+        c.style.setProperty('--cx', (e.clientX - r.left) + 'px');
+        c.style.setProperty('--cy2', (e.clientY - r.top) + 'px');
+      }, { passive: true });
+    });
+  }
+
+  /* ── 滚动显现（错峰） ── */
+  var items = document.querySelectorAll('.reveal');
+  var groups = {};
+  items.forEach(function (n) {
+    var p = n.parentElement;
+    var k = p ? Array.prototype.indexOf.call(p.children, n) : 0;
+    groups[k] = (groups[k] || 0) + 1;
+    n.dataset.d = k;
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var d = parseInt(en.target.dataset.d || '0', 10);
+        en.target.style.transitionDelay = Math.min(d, 8) * 70 + 'ms';
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    items.forEach(function (n) { io.observe(n); });
+  } else {
+    items.forEach(function (n) { n.classList.add('in'); });
+  }
+
+  /* ── 数字滚动 ── */
+  var nums = document.querySelectorAll('[data-count]');
+  var nio = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      var node = en.target, to = parseInt(node.dataset.count, 10),
+          sfx = node.dataset.suffix || '', t0 = null;
+      if (reduce) { node.textContent = to + sfx; nio.unobserve(node); return; }
+      function stepFn(ts) {
+        if (!t0) t0 = ts;
+        var p = Math.min((ts - t0) / 900, 1);
+        node.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + sfx;
+        if (p < 1) requestAnimationFrame(stepFn);
+      }
+      requestAnimationFrame(stepFn);
+      nio.unobserve(node);
+    });
+  }, { threshold: 0.5 });
+  nums.forEach(function (n) { nio.observe(n); });
+
+  /* ── 粒子网格背景 ── */
+  var cv = document.getElementById('bg');
+  if (cv && !reduce) {
+    var ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), pts = [], W = 0, H = 0;
+    var dot = getComputedStyle(document.documentElement).getPropertyValue('--dot').trim() || 'rgba(120,140,255,.5)';
+    function size() {
+      W = cv.width = Math.floor(innerWidth * dpr);
+      H = cv.height = Math.floor(innerHeight * dpr);
+      cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+      var n = innerWidth < 700 ? 30 : 68;
+      pts = [];
+      for (var i = 0; i < n; i++) pts.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .26 * dpr, vy: (Math.random() - .5) * .26 * dpr
+      });
+    }
+    var maxD = 132 * dpr, maxD2 = maxD * maxD, visible = true;
+    function frame() {
+      if (!visible) return;
+      ctx.clearRect(0, 0, W, H);
+      var i, j, p, q, dx, dy, d2;
+      for (i = 0; i < pts.length; i++) {
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+      }
+      ctx.lineWidth = 1 * dpr;
+      for (i = 0; i < pts.length; i++) {
+        for (j = i + 1; j < pts.length; j++) {
+          p = pts[i]; q = pts[j];
+          dx = p.x - q.x; dy = p.y - q.y; d2 = dx * dx + dy * dy;
+          if (d2 < maxD2) {
+            ctx.globalAlpha = (1 - d2 / maxD2) * .5;
+            ctx.strokeStyle = dot;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = .85; ctx.fillStyle = dot;
+      for (i = 0; i < pts.length; i++) {
+        ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, 1.5 * dpr, 0, 6.284); ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    size();
+    window.addEventListener('resize', size, { passive: true });
+    document.addEventListener('visibilitychange', function () {
+      visible = !document.hidden;
+      if (visible) requestAnimationFrame(frame);
+    });
+    requestAnimationFrame(frame);
+  }
+})();
+</script>
 </body>
 </html>
