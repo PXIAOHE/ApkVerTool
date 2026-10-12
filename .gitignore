@@ -29,3 +29,8 @@ dist/
 __pycache__/
 *.pyc
 .DS_Store
+
+# ── 官网直链：dist/ 里的正式产物必须进 git（jsDelivr 只认仓库内的文件）──
+!dist/
+!dist/latest.json
+!dist/*.apk
