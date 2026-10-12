@@ -753,7 +753,7 @@ private fun AboutTab(
             )
             ArrowPreference(
                 title = "官网",
-                summary = "",
+                summary = "ApkVerTool",
                 onClick = {
                     if (!LinkOpener.open(context, AvtVersion.SITE)) {
                         Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
