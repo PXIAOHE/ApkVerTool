@@ -1,20 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
-<meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
-<meta name="theme-color" content="#07070d" id="themeColor">
+<meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2，全程本地处理。">
+<meta name="theme-color" content="#ffffff" id="themeColor">
 <link rel="icon" href="./assets/icon.png">
 <script>
-  /* 主题必须在首帧前定下来，否则会闪一下白 */
   (function () {
     document.documentElement.classList.add('js');
     try {
       var t = localStorage.getItem('avt-theme');
       if (t !== 'light' && t !== 'dark') {
-        t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
       document.documentElement.setAttribute('data-theme', t);
     } catch (e) {}
@@ -22,245 +21,188 @@
 </script>
 <style>
   :root {
-    color-scheme: dark;
-    --bg:#07070d; --fg:#eae8f5; --muted:#9a97ad;
-    --line:rgba(140,140,200,.16); --card:rgba(22,22,36,.66); --card2:rgba(30,30,48,.5);
-    --cy:#4de1ff; --vi:#a06bff; --mg:#ff5cc8; --gr:#5cffa8;
-    --accent:#4de1ff; --dot:rgba(120,140,255,.55);
-    --title1:#fff; --title2:#4de1ff; --title3:#a06bff; --title4:#fff;
-    --statc:#fff; --glowtxt:0 0 22px rgba(77,225,255,.45);
-    --flow-blend: screen; --flow-op:.9;
-  }
-  [data-theme="light"] {
     color-scheme: light;
-    --bg:#f5f7fe; --fg:#131427; --muted:#5b5f7a;
-    --line:rgba(60,70,140,.17); --card:rgba(255,255,255,.74); --card2:rgba(255,255,255,.62);
-    --cy:#2a74ff; --vi:#7a3cff; --mg:#e0489f; --gr:#0f9d58;
-    --accent:#2a74ff; --dot:rgba(70,90,200,.40);
-    --title1:#0d1030; --title2:#2a6bff; --title3:#8b3cff; --title4:#0d1030;
-    --statc:#111a3a; --glowtxt:0 0 18px rgba(42,107,255,.22);
-    --flow-blend: multiply; --flow-op:.35;
+    --bg:#ffffff; --bg-soft:#f7f8fa; --fg:#101014; --fg-soft:#3c3c46; --muted:#6b6b76;
+    --line:#e8e8ee; --line-strong:#d8d8e2;
+    --accent:#3b6ef5; --accent-soft:#eef2ff;
+    --radius:16px; --radius-lg:22px;
+    --shadow:0 1px 2px rgba(16,16,32,.04), 0 8px 24px rgba(16,16,32,.06);
+    --shadow-lg:0 2px 6px rgba(16,16,32,.05), 0 20px 50px rgba(16,16,32,.10);
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#0e0e12; --bg-soft:#16161c; --fg:#f2f2f6; --fg-soft:#c9c9d4; --muted:#93939f;
+    --line:#26262f; --line-strong:#34343f;
+    --accent:#8ea6ff; --accent-soft:#1b1f33;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 20px 50px rgba(0,0,0,.5);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin:0; background:var(--bg); color:var(--fg); overflow-x:hidden;
-    font: 16px/1.7 "SF Mono", ui-monospace, -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-    -webkit-font-smoothing: antialiased; transition: background .45s ease, color .45s ease; }
-  a { color: var(--accent); text-decoration: none; }
-
-  /* ── 背景四层：WebGL 流体 → 粒子网格 → 网格线 → 光斑 + 扫描线 ── */
-  #flow, #bg { position: fixed; inset:0; z-index:0; pointer-events:none; }
-  #flow { mix-blend-mode: var(--flow-blend); opacity: var(--flow-op); }
-  .grid-overlay { position: fixed; inset:0; z-index:1; pointer-events:none; opacity:.5;
-    background-image: linear-gradient(rgba(120,140,255,.055) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(120,140,255,.055) 1px, transparent 1px);
-    background-size: 46px 46px, 46px 46px;
-    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
-    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%); }
-  .spot { position: fixed; inset:0; z-index:2; pointer-events:none;
-    background: radial-gradient(420px circle at var(--mx,50%) var(--my,20%), rgba(77,225,255,.10), transparent 62%); }
-  .scan { position: fixed; left:0; right:0; height:150px; z-index:3; pointer-events:none; opacity:.5;
-    background: linear-gradient(180deg, transparent, rgba(77,225,255,.045), transparent);
-    animation: scan 9s linear infinite; }
-  @keyframes scan { 0% { transform: translateY(-160px); } 100% { transform: translateY(100vh); } }
-
-  main { position: relative; z-index:5; max-width: 1040px; margin: 0 auto; padding: 0 22px 90px; }
-
-  /* ── 首屏加载 ── */
-  .boot { display:none; }
-  .js .boot { position:fixed; inset:0; z-index:90; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:18px; background:var(--bg); transition: opacity .6s ease; }
-  .js .boot.done { opacity:0; pointer-events:none; }
-  .boot img { width:78px; height:78px; border-radius:22px;
-    box-shadow: 0 0 0 1px rgba(140,160,255,.22), 0 0 40px rgba(77,225,255,.3);
-    animation: bootPulse 1.6s ease-in-out infinite; }
-  @keyframes bootPulse { 50% { transform: scale(1.06); } }
-  .boot-bar { width:222px; height:3px; border-radius:3px; overflow:hidden;
-    background: var(--card2); border:1px solid var(--line); }
-  .boot-bar i { display:block; height:100%; width:0%;
-    background: linear-gradient(90deg, var(--cy), var(--vi), var(--mg));
-    transition: width .28s ease; }
-  .boot-txt { font-size:12.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-  .boot-txt b { color: var(--accent); }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  h1,h2,h3 { letter-spacing:-.02em; line-height:1.2; margin:0; }
+  .wrap { width:100%; max-width:1080px; margin:0 auto; padding:0 24px; }
+  .eyebrow { font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
 
   /* ── 顶栏 ── */
-  header.top { position: sticky; top:0; z-index:40; backdrop-filter: blur(16px) saturate(140%);
-    background: color-mix(in srgb, var(--bg) 72%, transparent); border-bottom: 1px solid var(--line); }
-  .top-in { max-width: 1040px; margin:0 auto; padding: 11px 22px; display:flex; align-items:center; gap:12px; }
-  .top-in img.logo { width:28px; height:28px; border-radius:9px; box-shadow: 0 0 16px rgba(77,225,255,.35); }
-  .top-in b { font-size:15px; letter-spacing:.14em; text-transform: uppercase; }
-  .live { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gr);
-    border:1px solid rgba(92,255,168,.3); border-radius:999px; padding:2px 9px; letter-spacing:.08em; }
-  .live i { width:6px; height:6px; border-radius:50%; background:var(--gr); box-shadow:0 0 8px var(--gr);
-    animation: pulse 1.8s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.35; transform:scale(.7);} }
-  nav { margin-left:auto; display:flex; gap:20px; font-size:13.5px; align-items:center; }
-  nav a { color:var(--muted); position:relative; }
-  nav a::after { content:""; position:absolute; left:0; right:100%; bottom:-5px; height:1px;
-    background: linear-gradient(90deg,var(--cy),var(--vi)); transition: right .28s ease; }
+  header.top { position:sticky; top:0; z-index:30; background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .top-in { display:flex; align-items:center; gap:12px; height:60px; }
+  .top-in img { width:26px; height:26px; border-radius:7px; }
+  .top-in b { font-size:15.5px; letter-spacing:-.01em; }
+  nav { margin-left:auto; display:flex; align-items:center; gap:26px; font-size:14.5px; color:var(--muted); }
   nav a:hover { color:var(--fg); }
-  nav a:hover::after { right:0; }
-  .tt { display:grid; place-items:center; width:34px; height:34px; border-radius:10px; cursor:pointer;
-    border:1px solid var(--line); background: var(--card2); color: var(--fg); padding:0;
-    transition: border-color .2s ease, transform .2s ease; }
-  .tt:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .tt svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+  .tt { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; cursor:pointer;
+    border:1px solid var(--line); background:transparent; color:var(--muted); padding:0; }
+  .tt:hover { color:var(--fg); border-color:var(--line-strong); }
+  .tt svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; }
   .tt .moon { display:none; }
-  [data-theme="light"] .tt .sun { display:none; }
-  [data-theme="light"] .tt .moon { display:block; }
-  @media (max-width: 760px) { nav .lnk { display:none; } }
+  [data-theme="dark"] .tt .sun { display:none; }
+  [data-theme="dark"] .tt .moon { display:block; }
+  @media (max-width: 820px) { nav .lnk { display:none; } }
 
   /* ── Hero ── */
-  .hero { padding: 78px 0 10px; text-align:center; position:relative; }
-  .app-ico { width:104px; height:104px; border-radius:26px; position:relative;
-    box-shadow: 0 0 0 1px rgba(140,160,255,.25), 0 0 40px rgba(77,225,255,.28), 0 18px 50px rgba(0,0,0,.35); }
-  .app-ico::after { content:""; position:absolute; inset:-14px; border-radius:34px; z-index:-1;
-    background: conic-gradient(from 0deg, var(--cy), var(--vi), var(--mg), var(--cy));
-    filter: blur(18px); opacity:.42; animation: spin 8s linear infinite; }
-  @keyframes spin { to { transform: rotate(1turn); } }
-  h1 { font-size: clamp(34px, 7vw, 62px); margin: 22px 0 10px; letter-spacing:-.02em; font-weight:800;
-    background: linear-gradient(100deg, var(--title1) 8%, var(--title2) 30%, var(--title3) 52%, var(--title4) 78%);
-    background-size: 260% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
-    animation: sheen 6.5s linear infinite; }
-  @keyframes sheen { to { background-position: 260% 0; } }
-  .typed { color: var(--muted); font-size: 15.5px; min-height: 3.4em; margin: 0 auto 26px; max-width: 680px; }
-  .typed b { color: var(--accent); font-weight:600; }
-  .caret { display:inline-block; width:8px; height:1.05em; margin-left:2px; vertical-align:-2px;
-    background: var(--accent); animation: blink 1s steps(2) infinite; }
-  @keyframes blink { 50% { opacity:0; } }
-
-  .hud { display:inline-flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom: 24px; }
-  .hud span { font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
-    border:1px solid var(--line); background: var(--card2); border-radius:7px; padding: 5px 10px; }
-
-  .btns { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
-  .btn { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:9px;
-    padding: 14px 22px; border-radius:13px; border:1px solid var(--line); background: var(--card);
-    color: var(--fg); font-weight:650; font-size:15px; backdrop-filter: blur(8px);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-  .btn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .hero { padding: 88px 0 28px; text-align:center; }
+  .hero .app { width:88px; height:88px; border-radius:22px; box-shadow: var(--shadow-lg); }
+  .hero h1 { font-size: clamp(34px, 6vw, 58px); margin: 26px 0 14px; font-weight:800; }
+  .hero h1 span { color: var(--muted); }
+  .hero p.sub { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 660px; margin: 0 auto 30px; }
+  .cta { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .btn { display:inline-flex; align-items:center; gap:9px; padding: 13px 22px; border-radius: 12px;
+    font-weight:600; font-size:15px; border:1px solid var(--line-strong); background:var(--bg); color:var(--fg);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
   .btn.ghost svg { fill:currentColor; stroke:none; }
-  .btn:hover { transform: translateY(-3px); border-color: rgba(77,225,255,.5); box-shadow: 0 0 30px rgba(77,225,255,.22); }
-  .btn.primary { border-color: transparent; color:#04040a; font-weight:750;
-    background: linear-gradient(120deg, var(--cy), #8ee6ff 35%, var(--vi) 75%);
-    box-shadow: 0 0 34px rgba(77,225,255,.34), inset 0 0 20px rgba(255,255,255,.25); }
-  .btn.primary::after { content:""; position:absolute; top:0; bottom:0; width:38%; left:-40%;
-    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
-    animation: sweep 3.2s ease-in-out infinite; }
-  @keyframes sweep { 0%{left:-40%;} 55%{left:120%;} 100%{left:120%;} }
-  .sub { font-weight:500; font-size:12.5px; opacity:.72; }
+  .btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  [data-theme="dark"] .btn.primary { background:#fff; color:#0e0e12; border-color:#fff; }
+  .btn .sub { font-weight:500; opacity:.6; font-size:13px; }
+  .hero .meta { margin-top:20px; font-size:13.5px; color:var(--muted); display:flex; flex-wrap:wrap;
+    gap:8px; justify-content:center; }
+  .hero .meta code { background:var(--bg-soft); border:1px solid var(--line); border-radius:6px; padding:1px 6px; }
+  details.sha { max-width:720px; margin:14px auto 0; font-size:12.5px; color:var(--muted); }
+  details.sha summary { cursor:pointer; }
+  details.sha code { display:inline-block; margin-top:8px; padding:7px 10px; border-radius:8px;
+    background:var(--bg-soft); border:1px solid var(--line); word-break:break-all; }
 
-  .strip { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center;
-    margin: 24px 0 0; font-size:13.5px; color:var(--muted); }
-  .strip strong { color:var(--fg); }
-  details.sha { max-width:760px; margin: 14px auto 0; font-size:12.5px; color:var(--muted); }
-  details.sha summary { cursor:pointer; letter-spacing:.06em; }
-  details.sha code { display:inline-block; margin-top:7px; padding:7px 10px; border-radius:8px;
-    background: var(--card2); border:1px solid var(--line); word-break:break-all; color:var(--accent); }
+  /* ── 数据条 ── */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:8px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:34px 0; margin-top:56px; text-align:center; }
+  .stat b { display:block; font-size:clamp(28px,4vw,40px); font-weight:800; letter-spacing:-.03em; }
+  .stat span { font-size:13.5px; color:var(--muted); }
 
-  /* ── 区块 ── */
-  section { margin-top: 96px; }
-  .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:22px; }
-  .sec-head .tag { font-size:11.5px; letter-spacing:.18em; color:var(--accent); text-transform:uppercase; }
-  h2 { font-size: 26px; margin:0; letter-spacing:-.01em; }
-  .hint { color:var(--muted); font-size:14.5px; margin: 0 0 24px; }
+  /* ── 通用区块 ── */
+  section { padding: 88px 0; }
+  section + section { border-top:1px solid var(--line); }
+  .sec-head { text-align:center; max-width:660px; margin:0 auto 46px; }
+  .sec-head h2 { font-size: clamp(26px, 3.6vw, 38px); margin:12px 0 12px; }
+  .sec-head p { color:var(--muted); margin:0; font-size:16.5px; }
 
-  /* ── 数字条 ── */
-  .stats { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-  .stat { border:1px solid var(--line); border-radius:16px; padding:18px 16px; background: var(--card);
-    backdrop-filter: blur(8px); text-align:center; }
-  .stat b { display:block; font-size:30px; line-height:1.1; color:var(--statc); text-shadow: var(--glowtxt); }
-  .stat span { font-size:12.5px; color:var(--muted); letter-spacing:.06em; }
+  /* ── 功能卡 ── */
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); }
+  .card { border:1px solid var(--line); border-radius:var(--radius-lg); padding:26px;
+    background:var(--bg); transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+  .card:hover { border-color:var(--line-strong); box-shadow:var(--shadow); transform:translateY(-2px); }
+  .ico { width:44px; height:44px; border-radius:13px; display:grid; place-items:center;
+    background:var(--accent-soft); border:1px solid var(--line); }
+  .ico svg { width:22px; height:22px; fill:none; stroke:var(--accent); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .card h3 { font-size:17.5px; margin:18px 0 8px; }
+  .card p { margin:0; color:var(--muted); font-size:15px; }
 
-  /* ── 功能卡：3D 倾斜 + 局部高光 ── */
-  .grid { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); perspective: 900px; }
-  .card { position:relative; border:1px solid var(--line); border-radius:18px; background: var(--card);
-    backdrop-filter: blur(9px);
-    transition: transform .3s cubic-bezier(.2,.7,.2,1), border-color .25s ease, box-shadow .25s ease; }
-  .card > .tilt { position:relative; overflow:hidden; border-radius:18px; padding:20px;
-    transform-style: preserve-3d;
-    transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(var(--tz,0px));
-    transition: transform .3s cubic-bezier(.2,.7,.2,1); }
-  .card > .tilt::before { content:""; position:absolute; inset:0; opacity:0; transition: opacity .25s ease;
-    background: radial-gradient(320px circle at var(--cx,50%) var(--cy2,0%), rgba(77,225,255,.15), transparent 60%); }
-  .card:hover { border-color: rgba(77,225,255,.45);
-    box-shadow: 0 18px 46px rgba(0,0,0,.35), 0 0 30px rgba(77,225,255,.16); }
-  .card:hover > .tilt::before { opacity:1; }
-  .card h3 { font-size:16.5px; margin: 12px 0 6px; transform: translateZ(26px); }
-  .card p { margin:0; color:var(--muted); font-size:14.5px; transform: translateZ(14px); }
-  .ico { width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
-    background: linear-gradient(140deg, rgba(77,225,255,.22), rgba(160,107,255,.22));
-    border:1px solid rgba(140,160,255,.28); transform: translateZ(34px); }
-  .ico svg { width:20px; height:20px; fill:none; stroke:var(--accent); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
-  .card:hover .ico svg { animation: nudge .7s ease; }
-  @keyframes nudge { 50% { transform: translateY(-3px) scale(1.08); } }
+  /* ── 步骤 ── */
+  .steps { display:grid; gap:34px; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); }
+  .step .num { width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+    font-size:14px; font-weight:700; background:var(--fg); color:var(--bg); }
+  [data-theme="dark"] .step .num { background:#fff; color:#0e0e12; }
+  .step h3 { font-size:16.5px; margin:14px 0 6px; }
+  .step p { margin:0; color:var(--muted); font-size:15px; }
 
-  /* ── 截图 ── */
-  .shots { display:flex; gap:18px; overflow-x:auto; padding: 8px 2px 16px; scroll-snap-type:x mandatory; }
-  .shot { flex:0 0 auto; width:238px; margin:0; scroll-snap-align:center; perspective: 800px; }
-  .shot img { width:100%; border-radius:20px; display:block; border:1px solid rgba(140,160,255,.22);
-    box-shadow: 0 14px 40px rgba(0,0,0,.35), 0 0 26px rgba(77,225,255,.12);
-    transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
-    transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease; }
-  .shot:hover img { box-shadow: 0 22px 54px rgba(0,0,0,.45), 0 0 34px rgba(77,225,255,.26); }
-  .shot figcaption { font-size:12.5px; color:var(--muted); margin-top:10px; }
-  .shot figcaption strong { color:var(--fg); }
+  /* ── 截图（错位斜摆，悬停摆正） ── */
+  .shots { display:flex; gap:26px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .shot { margin:0; width:236px; }
+  .shot img { width:100%; display:block; border-radius:20px; border:1px solid var(--line);
+    box-shadow:var(--shadow-lg); transform: rotate(-6deg) translateY(6px);
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease; }
+  .shot:nth-child(2) img { transform: rotate(0deg) translateY(-6px) scale(1.04); }
+  .shot:nth-child(3) img { transform: rotate(6deg) translateY(6px); }
+  .shot:hover img { transform: rotate(0deg) translateY(-10px) scale(1.05); }
+  .shot figcaption { text-align:center; font-size:13.5px; color:var(--muted); margin-top:14px; }
+  .shot figcaption strong { color:var(--fg); display:block; font-size:14.5px; }
+  @media (max-width: 700px) {
+    .shot img, .shot:nth-child(2) img, .shot:nth-child(3) img { transform:none; }
+  }
+
+  /* ── 下载 ── */
+  .dl-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); }
+  .dl-card { border:1px solid var(--line); border-radius:var(--radius-lg); padding:24px;
+    display:flex; flex-direction:column; gap:6px; background:var(--bg); }
+  .dl-card:hover { border-color:var(--line-strong); box-shadow:var(--shadow); }
+  .dl-card b { font-size:16.5px; }
+  .dl-card span { color:var(--muted); font-size:14px; }
+  .dl-card .go { margin-top:12px; font-size:14.5px; font-weight:600; color:var(--accent); }
+  .dl-note { text-align:center; color:var(--muted); font-size:14px; margin-top:26px; line-height:1.9; }
+  .dl-note code { background:var(--bg-soft); border:1px solid var(--line); border-radius:6px; padding:2px 7px;
+    word-break:break-all; font-size:12.5px; display:inline-block; }
 
   /* ── 更新日志 ── */
-  .ver { position:relative; border-left:1px solid var(--line); padding: 2px 0 6px 22px; margin-bottom:24px; }
-  .ver::before { content:""; position:absolute; left:-4.5px; top:8px; width:8px; height:8px; border-radius:50%;
-    background: var(--muted); box-shadow: 0 0 0 4px rgba(140,140,200,.08); }
-  .ver.now { border-image: linear-gradient(180deg, var(--cy), transparent) 1; }
-  .ver.now::before { background: var(--accent); box-shadow: 0 0 14px var(--accent); }
-  .ver header { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
-  .vtag { font-weight:750; font-size:15.5px; }
-  .vdate { color:var(--muted); font-size:12.5px; }
-  .chip { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#04040a;
-    background: linear-gradient(120deg,var(--cy),var(--vi)); border-radius:6px; padding:2px 7px; font-weight:700; }
-  .ver ul { margin:0; padding-left:16px; color:var(--muted); font-size:14.5px; }
-  .ver li { margin:4px 0; }
+  .log { max-width:760px; margin:0 auto; }
+  .ver { border-bottom:1px solid var(--line); padding:22px 0; }
+  .ver:last-child { border-bottom:0; }
+  .ver header { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .vtag { font-weight:700; font-size:16px; }
+  .vdate { color:var(--muted); font-size:13.5px; }
+  .chip { font-size:11.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+    border-radius:999px; padding:2px 9px; }
+  .ver ul { margin:0; padding-left:18px; color:var(--muted); font-size:15px; }
+  .ver li { margin:5px 0; }
 
-  footer { margin-top:96px; padding-top:24px; border-top:1px solid var(--line);
-    color:var(--muted); font-size:13px; display:flex; flex-direction:column; align-items:center;
-    text-align:center; gap:9px; }
-  footer span.sp { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  /* ── FAQ ── */
+  .faq { max-width:760px; margin:0 auto; }
+  .faq details { border-bottom:1px solid var(--line); padding:18px 0; }
+  .faq summary { cursor:pointer; font-weight:600; font-size:16px; list-style:none; display:flex; align-items:center; gap:10px; }
+  .faq summary::-webkit-details-marker { display:none; }
+  .faq summary::after { content:"+"; margin-left:auto; color:var(--muted); font-weight:400; font-size:19px; }
+  .faq details[open] summary::after { content:"−"; }
+  .faq p { color:var(--muted); font-size:15px; margin:12px 0 0; }
 
-  /* 滚动显现：只有 JS 可用时才先藏内容，无 JS / 爬虫直接可见 */
-  .js .reveal { opacity:0; transform: translateY(26px);
-    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  /* ── 页脚 ── */
+  footer { border-top:1px solid var(--line); padding:64px 0 40px; margin-top:20px; }
+  .foot-top { display:grid; gap:34px; grid-template-columns: 1.4fr 1fr 1fr 1fr; }
+  .foot-brand img { width:34px; height:34px; border-radius:9px; }
+  .foot-brand b { display:block; margin:12px 0 6px; font-size:16px; }
+  .foot-brand p { margin:0; color:var(--muted); font-size:14px; max-width:280px; }
+  .foot-col h4 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:2px 0 14px; font-weight:600; }
+  .foot-col a { display:block; color:var(--fg-soft); font-size:14.5px; padding:5px 0; }
+  .foot-col a:hover { color:var(--accent); }
+  .foot-bottom { margin-top:46px; padding-top:22px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:13.5px; text-align:center; }
+  @media (max-width: 820px) { .foot-top { grid-template-columns: 1fr 1fr; } }
+
+  /* 轻量滚动淡入（无 JS 时直接可见） */
+  .js .reveal { opacity:0; transform:translateY(14px);
+    transition: opacity .6s ease, transform .6s ease; }
   .js .reveal.in { opacity:1; transform:none; }
-
   @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
+    * { animation:none !important; transition:none !important; }
     .js .reveal { opacity:1 !important; transform:none !important; }
-    #bg, #flow, .scan, .js .boot { display:none !important; }
-    .card > .tilt, .shot img { transform:none !important; }
   }
 </style>
 </head>
 <body>
-<div class="boot" id="boot">
-  <img src="./assets/icon.png" alt="">
-  <div class="boot-bar"><i id="bootBar"></i></div>
-  <div class="boot-txt" id="bootTxt">初始化引擎…</div>
-</div>
-
-<canvas id="flow"></canvas>
-<canvas id="bg"></canvas>
-<div class="grid-overlay"></div>
-<div class="spot" id="spot"></div>
-<div class="scan"></div>
 
 <header class="top">
-  <div class="top-in">
-    <img class="logo" src="./assets/icon.png" alt="">
+  <div class="wrap top-in">
+    <img src="./assets/icon.png" alt="">
     <b>ApkVerTool</b>
-    <span class="live"><i></i>BUILD OK</span>
     <nav>
-      <a class="lnk" href="#dl">下载</a>
-      <a class="lnk" href="#feat">功能</a>
+      <a class="lnk" href="#features">功能</a>
+      <a class="lnk" href="#how">流程</a>
       <a class="lnk" href="#shots">界面</a>
-      <a class="lnk" href="#log">更新日志</a>
+      <a class="lnk" href="#download">下载</a>
+      <a class="lnk" href="#faq">常见问题</a>
       <a class="lnk" href="https://github.com/PXIAOHE/ApkVerTool">GitHub</a>
       <button class="tt" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">
         <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
@@ -270,80 +212,109 @@
   </div>
 </header>
 
-<main>
-  <div class="hero" id="dl">
-    <img class="app-ico" src="./assets/icon.png" alt="ApkVerTool 图标">
-    <h1>ApkVerTool</h1>
-    <p class="typed" id="typed"></p>
-
-    <div class="hud">
-      <span>Version 2.3.4</span>
-      <span>Code 34</span>
-      <span>Engine · Self-built</span>
-      <span>Android 13+</span>
-    </div>
-
-    <div class="btns">
+<div class="wrap">
+  <div class="hero">
+    <img class="app" src="./assets/icon.png" alt="ApkVerTool 图标">
+    <h1>改 APK，<span>不用装工具链。</span></h1>
+    <p class="sub">纯自研引擎的安卓 APK 清单查看与修改、条目增删、重打包重签名工具。四个格式全部手写读写，不依赖 apktool / aapt2，全程本地处理。</p>
+    <div class="cta">
       <a class="btn primary" href="https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@0fcd6448e03ea30d726cc46b791c5625c28e370d/dist/ApkVerTool-v2.3.4.apk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>国内直链下载<span class="sub">jsDelivr 加速</span></a>
       <a class="btn ghost" href="https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.4/ApkVerTool-v2.3.4.apk"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>GitHub Release</a>
     </div>
-
-    <div class="strip">
-      <span>当前版本 <strong>v2.3.4</strong>（code 34）</span><span>· 3.77 MB</span>
-      <span>· Android 13（API 33） 及以上</span>
+    <div class="meta">
+      <span>v2.3.4（code 34）<span>· 3.77 MB</span></span>
+      <span>·</span>
+      <span>Android 13（API 33） 及以上</span>
+      <span>·</span>
+      <span>Apache-2.0 开源</span>
     </div>
     <details class="sha"><summary>校验值 SHA-256</summary><code>7571bf83de1bdaf4ea16a5684a11a726a72b88984c9d3f1f2ba02534ddbe3fb1</code></details>
   </div>
 
-  <section id="stat" class="reveal">
-    <div class="stats">
-      <div class="stat"><b data-count="4">0</b><span>手写格式引擎</span></div>
-      <div class="stat"><b data-count="2">0</b><span>完整界面套数</span></div>
-      <div class="stat"><b data-count="0">0</b><span>广告 / 统计 SDK</span></div>
-      <div class="stat"><b data-count="100" data-suffix="%">0</b><span>本地处理，不上传</span></div>
-    </div>
-  </section>
+  <div class="stats">
+    <div class="stat"><b>4</b><span>手写格式引擎</span></div>
+    <div class="stat"><b>2</b><span>完整界面套数</span></div>
+    <div class="stat"><b>0</b><span>广告 / 统计 SDK</span></div>
+    <div class="stat"><b>100%</b><span>本地处理，不上传</span></div>
+  </div>
+</div>
 
-  <section id="feat" class="reveal">
-    <div class="sec-head"><span class="tag">// features</span><h2>功能</h2></div>
-    <p class="hint">选 APK → 改清单 → 增删条目 → 对齐重打包 → 重签名，输出可直接安装的新包；也支持 XAPK / APKS / split 多包容器。</p>
+<section id="features" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Features</div>
+      <h2>改写一个包，需要的东西都在</h2>
+      <p>从清单字段到包名联动、条目增删、对齐体检、重签名，一条链走完，产物可直接安装。</p>
+    </div>
     <div class="grid">
-      <div class="card reveal"><div class="tilt">
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div>
         <h3>清单改写</h3>
-        <p>versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名，属性缺失自动补齐。</p>
-      </div></div>
-      <div class="card reveal"><div class="tilt">
+        <p>versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名，属性缺失会自动补齐。</p>
+      </div>
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="m8 6 4-3 4 3M12 3v9M5 13v6h14v-6"/></svg></div>
         <h3>包名联动</h3>
-        <p>一次改包名四处同步：AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池、.so 等长替换。</p>
-      </div></div>
-      <div class="card reveal"><div class="tilt">
+        <p>一次改包名，四处同步：AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池、.so 等长替换。</p>
+      </div>
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM9 7V5h6v2M10 12h4"/></svg></div>
         <h3>条目增删</h3>
         <p>替换 / 新增 / 删除包内任意条目或目录前缀；重打包保留原 extra field，支持 Zip64。</p>
-      </div></div>
-      <div class="card reveal"><div class="tilt">
+      </div>
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v8m0 0 5 3m-5-3-5 3M5 21h14M6 12v5h12v-5"/></svg></div>
-        <h3>重打包对齐</h3>
-        <p>4 字节与 16KB 页对齐体检，签名前就能看清每一段是否合规。</p>
-      </div></div>
-      <div class="card reveal"><div class="tilt">
+        <h3>对齐体检</h3>
+        <p>4 字节与 16KB 页对齐报告，签名之前就能看清每一段是否合规。</p>
+      </div>
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <h3>重签名</h3>
-        <p>V1 / V2 / V3 / V4 可分别开关，内置 PKCS#12 密钥管理，产物可直接安装。</p>
-      </div></div>
-      <div class="card reveal"><div class="tilt">
+        <p>V1 / V2 / V3 / V4 可分别开关，内置 PKCS#12 密钥管理，导出的包可直接安装。</p>
+      </div>
+      <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 20V9m7 11V4m7 16v-7"/></svg></div>
-        <h3>体检</h3>
+        <h3>体检与识别</h3>
         <p>包名 / 版本 / SDK / DEX / ABI / 权限统计、加固壳识别、签名者证书指纹与有效期。</p>
-      </div></div>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="shots" class="reveal">
-    <div class="sec-head"><span class="tag">// screenshots</span><h2>界面</h2></div>
-    <p class="hint">真机截图（MiuixX · 深色）。设置里可热切到 Material 3 界面。</p>
+<section id="how" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">How it works</div>
+      <h2>三步出包</h2>
+      <p>不用配置环境，也不需要在电脑上装 Android SDK。</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">1</div>
+        <h3>选包</h3>
+        <p>支持 .apk 单包、多选批量，以及 .xapk / .apks / split 压缩包，容器内每个子包分别处理。</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">2</div>
+        <h3>改清单与条目</h3>
+        <p>改版本号、SDK、包名、应用名，增删包内任意条目；留空即不改动，每一步都有日志。</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">3</div>
+        <h3>重打包重签名</h3>
+        <p>对齐重打包并签名，输出路径你来定；签名开关与方案都在设置里，产物可直接安装。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="shots" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Screenshots</div>
+      <h2>界面</h2>
+      <p>真机截图（MiuixX · 深色）。设置里可热切到 Material 3 界面。</p>
+    </div>
     <div class="shots">
       <figure class="shot reveal">
         <img src="./assets/screen-write.jpg" alt="改写 界面截图" loading="lazy">
@@ -358,11 +329,48 @@
         <figcaption><strong>关于</strong>　内置更新检查与官网入口，点一下就能拿到国内直链新版本</figcaption>
       </figure>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="log" class="reveal">
-    <div class="sec-head"><span class="tag">// changelog</span><h2>更新日志</h2></div>
-    <p class="hint">完整历史见 <a href="https://github.com/PXIAOHE/ApkVerTool/blob/main/CHANGELOG.md">CHANGELOG.md</a>。</p>
+<section id="download" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Download</div>
+      <h2>下载 v2.3.4</h2>
+      <p>同一份产物，三个入口任选；下载后可自行核对 SHA-256。</p>
+    </div>
+    <div class="dl-grid">
+      <a class="dl-card" href="https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@0fcd6448e03ea30d726cc46b791c5625c28e370d/dist/ApkVerTool-v2.3.4.apk">
+        <b>国内直链（jsDelivr）</b>
+        <span>CDN 加速，国内下载最快</span>
+        <span class="go">立即下载 →</span>
+      </a>
+      <a class="dl-card" href="https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.4/ApkVerTool-v2.3.4.apk">
+        <b>GitHub Release</b>
+        <span>官方发布页，附完整更新说明</span>
+        <span class="go">前往下载 →</span>
+      </a>
+      <a class="dl-card" href="https://github.com/PXIAOHE/ApkVerTool">
+        <b>源码仓库</b>
+        <span>Apache-2.0，欢迎自建与反馈</span>
+        <span class="go">查看源码 →</span>
+      </a>
+    </div>
+    <p class="dl-note">
+      体积 3.77 MB · 系统要求 Android 13（API 33） 及以上 · 首次安装需允许「未知来源」<br>
+      校验值 SHA-256：<code>7571bf83de1bdaf4ea16a5684a11a726a72b88984c9d3f1f2ba02534ddbe3fb1</code>
+    </p>
+  </div>
+</section>
+
+<section id="changelog" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Changelog</div>
+      <h2>更新日志</h2>
+      <p>完整历史见 <a href="https://github.com/PXIAOHE/ApkVerTool/blob/main/CHANGELOG.md">CHANGELOG.md</a>。</p>
+    </div>
+    <div class="log">
       <article class="ver" class="now">
         <header><span class="vtag">v2.3.4</span><span class="chip">最新</span><span class="vdate">2026-10-12</span></header>
         <ul>
@@ -401,133 +409,106 @@
           <li>更新清单走 jsDelivr，取不到自动退 GitHub Releases API；版本按 versionCode 比较</li>
         </ul>
       </article>
-  </section>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    <span>Apache-2.0 开源 · 仅用于处理你有权处理的 APK 文件</span>
-    <span class="sp">
-      <a href="./privacy.html">隐私政策</a> ·
-      <a href="https://github.com/PXIAOHE/ApkVerTool">GitHub</a> ·
-      <a href="https://github.com/PXIAOHE/ApkVerTool/releases">历史版本</a> ·
-      <a href="https://github.com/PXIAOHE/ApkVerTool/issues">反馈</a>
-    </span>
-  </footer>
-</main>
+<section id="faq" class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">FAQ</div>
+      <h2>常见问题</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>真的免费吗？</summary>
+        <p>免费且开源（Apache-2.0）。没有广告、没有统计 SDK、没有账号体系，也没有隐藏收费。</p>
+      </details>
+      <details>
+        <summary>会把我的文件上传吗？</summary>
+        <p>不会。你选中的 APK 只在本机被解析、修改、重打包、重签名，结果写到你指定的输出目录；联网只用在你主动点「检查更新」时拉一份版本清单。</p>
+      </details>
+      <details>
+        <summary>需要 root 吗？</summary>
+        <p>改写、体检、重签名都不需要 root。只有「改完之后直接安装到系统里」这一步，遇到未签名或签名不一致的包时，系统才会要求 root + 核心破解。</p>
+      </details>
+      <details>
+        <summary>支持哪些包类型？</summary>
+        <p>.apk 单包与多选批量，以及 .xapk / .apks / split 压缩包；容器内每个子包会分别处理并回填元数据。</p>
+      </details>
+      <details>
+        <summary>系统要求与体积？</summary>
+        <p>Android 13（API 33） 及以上，当前版本 v2.3.4 约 3.77 MB，单个 APK 安装即用。</p>
+      </details>
+      <details>
+        <summary>改完的包能直接装吗？</summary>
+        <p>默认会重签名，产物可直接安装；如果关掉「重新签名」，输出是 MT 式的不重签包，仅供二次处理，不能直接安装。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <img src="./assets/icon.png" alt="">
+        <b>ApkVerTool</b>
+        <p>安卓 APK 清单修改与重打包工具。纯自研引擎，开源免费，全程本地处理。</p>
+      </div>
+      <div class="foot-col">
+        <h4>产品</h4>
+        <a href="#download">下载</a>
+        <a href="#changelog">更新日志</a>
+        <a href="./privacy.html">隐私政策</a>
+      </div>
+      <div class="foot-col">
+        <h4>社区</h4>
+        <a href="https://github.com/PXIAOHE/ApkVerTool">GitHub</a>
+        <a href="https://github.com/PXIAOHE/ApkVerTool/issues">问题反馈</a>
+        <a href="https://github.com/PXIAOHE/ApkVerTool/releases">历史版本</a>
+      </div>
+      <div class="foot-col">
+        <h4>法律</h4>
+        <a href="https://github.com/PXIAOHE/ApkVerTool/blob/main/LICENSE">Apache-2.0</a>
+        <a href="./privacy.html">隐私说明</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 ApkVerTool · 仅用于处理你有权处理的 APK 文件 · Licensed under the Apache License 2.0
+    </div>
+  </div>
+</footer>
 
 <script>
 (function () {
   var D = document, root = D.documentElement;
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var fine = window.matchMedia('(pointer: fine)').matches;
-  var visible = true;
-  var dotColor = '';
-  function cssVar(n) { return getComputedStyle(root).getPropertyValue(n).trim(); }
-  dotColor = cssVar('--dot') || 'rgba(120,140,255,.5)';
-  window.__avtRefreshColors = function () { dotColor = cssVar('--dot') || dotColor; };
 
-  /* ───────── 主题切换 ───────── */
+  /* 主题：点击切换，记住选择；未手动选过时跟随系统 */
   var tbtn = D.getElementById('themeBtn');
+  function syncMeta() {
+    var m = D.getElementById('themeColor');
+    if (m) m.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || '#ffffff');
+  }
   if (tbtn) tbtn.addEventListener('click', function () {
-    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
     try { localStorage.setItem('avt-theme', next); } catch (e) {}
-    var m = D.getElementById('themeColor');
-    if (m) m.setAttribute('content', cssVar('--bg') || '#07070d');
-    window.__avtRefreshColors();
+    syncMeta();
   });
+  syncMeta();
   try {
-    var mq = window.matchMedia('(prefers-color-scheme: light)');
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
     var onSys = function () {
       try { if (localStorage.getItem('avt-theme')) return; } catch (e) {}
-      root.setAttribute('data-theme', mq.matches ? 'light' : 'dark');
-      window.__avtRefreshColors();
+      root.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
+      syncMeta();
     };
     mq.addEventListener ? mq.addEventListener('change', onSys) : mq.addListener(onSys);
   } catch (e) {}
 
-  /* ───────── 首屏加载 ───────── */
-  (function () {
-    var el = D.getElementById('boot'), bar = D.getElementById('bootBar'), txt = D.getElementById('bootTxt');
-    if (!el) return;
-    if (reduce) { el.remove(); return; }
-    var stages = [[18, '初始化引擎…'], [42, '载入资源…'], [68, '编译着色器…'], [88, '就绪']];
-    var i = 0, done = false;
-    (function step() {
-      if (done || i >= stages.length) return;
-      bar.style.width = stages[i][0] + '%';
-      txt.textContent = stages[i][1];
-      i++;
-      setTimeout(step, 240 + Math.random() * 260);
-    })();
-    function finish() {
-      if (done) return;
-      done = true;
-      bar.style.width = '100%';
-      txt.innerHTML = '<b>OK</b> · 启动完成';
-      setTimeout(function () {
-        el.classList.add('done');
-        setTimeout(function () { el.remove(); }, 700);
-      }, 220);
-    }
-    if (D.readyState === 'complete') setTimeout(finish, 700);
-    else window.addEventListener('load', function () { setTimeout(finish, 520); });
-    setTimeout(finish, 2600);   /* 兜底：别让加载页卡住用户 */
-  })();
-
-  /* ───────── 打字机 ───────── */
-  var lines = [
-    '纯自研引擎：AXML / resources.arsc / DEX / ZIP <b>四个格式全部手写读写</b>',
-    '<b>改清单</b> · 删条目 · 对齐重打包 · <b>重签名</b>，一套流程走完',
-    '两套界面热切换 · 莫奈取色 · 液态玻璃栏体 · <b>无广告无统计</b>'
-  ];
-  var el = D.getElementById('typed'), li = 0, ci = 0, deleting = false;
-  function rstrip(h) { return h.replace(/<[^>]+>/g, ''); }
-  function paint(t) { el.innerHTML = t + '<span class="caret"></span>'; }
-  function type() {
-    var full = lines[li], plain = rstrip(full);
-    if (!deleting) {
-      ci++;
-      paint(plain.slice(0, ci));
-      if (ci >= plain.length) { el.innerHTML = full + '<span class="caret"></span>'; deleting = true; return setTimeout(type, 2200); }
-      return setTimeout(type, 26 + Math.random() * 40);
-    }
-    ci -= 2;
-    if (ci <= 0) { ci = 0; deleting = false; li = (li + 1) % lines.length; return setTimeout(type, 260); }
-    paint(plain.slice(0, ci));
-    setTimeout(type, 14);
-  }
-  if (el) { if (reduce) el.innerHTML = lines[0]; else type(); }
-
-  /* ───────── 鼠标光斑 + 3D 倾斜 ───────── */
-  if (!reduce && fine) {
-    var spot = D.getElementById('spot');
-    window.addEventListener('pointermove', function (e) {
-      if (spot) { spot.style.setProperty('--mx', e.clientX + 'px'); spot.style.setProperty('--my', e.clientY + 'px'); }
-    }, { passive: true });
-
-    function attachTilt(box, target) {
-      if (!target) return;
-      box.addEventListener('pointermove', function (e) {
-        var r = box.getBoundingClientRect();
-        var px = (e.clientX - r.left) / r.width - 0.5;
-        var py = (e.clientY - r.top) / r.height - 0.5;
-        target.style.setProperty('--rx', (-py * 8).toFixed(2) + 'deg');
-        target.style.setProperty('--ry', (px * 10).toFixed(2) + 'deg');
-        target.style.setProperty('--tz', '16px');
-        target.style.setProperty('--cx', (e.clientX - r.left) + 'px');
-        target.style.setProperty('--cy2', (e.clientY - r.top) + 'px');
-      }, { passive: true });
-      box.addEventListener('pointerleave', function () {
-        target.style.setProperty('--rx', '0deg');
-        target.style.setProperty('--ry', '0deg');
-        target.style.setProperty('--tz', '0px');
-      });
-    }
-    D.querySelectorAll('.card').forEach(function (b) { attachTilt(b, b.querySelector('.tilt')); });
-    D.querySelectorAll('.shot').forEach(function (b) { attachTilt(b, b.querySelector('img')); });
-  }
-
-  /* ───────── 滚动显现（错峰） ───────── */
+  /* 滚动淡入（轻量、错峰） */
   var items = D.querySelectorAll('.reveal');
   items.forEach(function (n) {
     var p = n.parentElement;
@@ -537,162 +518,15 @@
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (en) {
         if (!en.isIntersecting) return;
-        en.target.style.transitionDelay = Math.min(parseInt(en.target.dataset.d || '0', 10), 8) * 70 + 'ms';
+        if (!reduce) en.target.style.transitionDelay = Math.min(parseInt(en.target.dataset.d || '0', 10), 6) * 60 + 'ms';
         en.target.classList.add('in');
         io.unobserve(en.target);
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
     items.forEach(function (n) { io.observe(n); });
   } else {
     items.forEach(function (n) { n.classList.add('in'); });
   }
-
-  /* ───────── 数字滚动 ───────── */
-  if ('IntersectionObserver' in window) {
-    var nio = new IntersectionObserver(function (es) {
-      es.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        var node = en.target, to = parseInt(node.dataset.count, 10),
-            sfx = node.dataset.suffix || '', t0 = null;
-        if (reduce) { node.textContent = to + sfx; nio.unobserve(node); return; }
-        (function step(ts) {
-          if (!t0) t0 = ts;
-          var p = Math.min((ts - t0) / 900, 1);
-          node.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + sfx;
-          if (p < 1) requestAnimationFrame(step);
-        })(performance.now());
-        nio.unobserve(node);
-      });
-    }, { threshold: 0.5 });
-    D.querySelectorAll('[data-count]').forEach(function (n) { nio.observe(n); });
-  }
-
-  /* ───────── 粒子网格（rAF 常驻，隐藏时只跳过绘制） ───────── */
-  var cv = D.getElementById('bg');
-  if (cv && !reduce) {
-    var ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), pts = [], W = 0, H = 0;
-    var sizeBG = function () {
-      W = cv.width = Math.floor(innerWidth * dpr);
-      H = cv.height = Math.floor(innerHeight * dpr);
-      cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
-      var n = innerWidth < 700 ? 30 : 68;
-      pts = [];
-      for (var i = 0; i < n; i++) pts.push({
-        x: Math.random() * W, y: Math.random() * H,
-        vx: (Math.random() - .5) * .26 * dpr, vy: (Math.random() - .5) * .26 * dpr
-      });
-    };
-    sizeBG();
-    window.addEventListener('resize', sizeBG, { passive: true });
-    var maxD = 132 * dpr, maxD2 = maxD * maxD;
-    (function frame() {
-      requestAnimationFrame(frame);
-      if (!visible || D.hidden) return;
-      ctx.clearRect(0, 0, W, H);
-      var i, j, p, q, dx, dy, d2;
-      for (i = 0; i < pts.length; i++) {
-        p = pts[i]; p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > W) p.vx *= -1;
-        if (p.y < 0 || p.y > H) p.vy *= -1;
-      }
-      ctx.lineWidth = 1 * dpr;
-      for (i = 0; i < pts.length; i++) {
-        for (j = i + 1; j < pts.length; j++) {
-          p = pts[i]; q = pts[j];
-          dx = p.x - q.x; dy = p.y - q.y; d2 = dx * dx + dy * dy;
-          if (d2 < maxD2) {
-            ctx.globalAlpha = (1 - d2 / maxD2) * .5;
-            ctx.strokeStyle = dotColor;
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
-          }
-        }
-      }
-      ctx.globalAlpha = .85; ctx.fillStyle = dotColor;
-      for (i = 0; i < pts.length; i++) { ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, 1.5 * dpr, 0, 6.284); ctx.fill(); }
-    })();
-  }
-
-  /* ───────── WebGL 流体光晕 ───────── */
-  var fcv = D.getElementById('flow'), gl = null, u = {};
-  if (fcv && !reduce) {
-    try {
-      gl = fcv.getContext('webgl', { alpha: true, antialias: false, premultipliedAlpha: false })
-        || fcv.getContext('experimental-webgl', { alpha: true, antialias: false, premultipliedAlpha: false });
-    } catch (e) { gl = null; }
-  }
-  if (gl) {
-    var VS = 'attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }';
-    var FS = [
-      'precision highp float;',
-      'uniform vec2 r; uniform float t; uniform float li;',
-      'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453123); }',
-      'float nz(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);',
-      '  float a=h(i), b=h(i+vec2(1.,0.)), c=h(i+vec2(0.,1.)), d=h(i+vec2(1.,1.));',
-      '  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }',
-      'float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<5;i++){ s+=a*nz(p); p*=2.03; a*=.5; } return s; }',
-      'void main(){',
-      '  vec2 q0 = (gl_FragCoord.xy - .5*r)/r.y;',
-      '  float tt = t*0.055;',
-      '  vec2 q = vec2(fbm(q0*1.55 + tt), fbm(q0*1.55 + vec2(5.2,1.3) - tt));',
-      '  vec2 w = vec2(fbm(q0*2.05 + 3.0*q + vec2(1.7,9.2) + tt*1.4),',
-      '                fbm(q0*2.05 + 3.0*q + vec2(8.3,2.8) - tt*1.2));',
-      '  float f = fbm(q0*2.35 + 2.6*w);',
-      '  vec3 c1 = vec3(0.30,0.86,1.00);',
-      '  vec3 c2 = vec3(0.63,0.42,1.00);',
-      '  vec3 c3 = vec3(1.00,0.36,0.78);',
-      '  vec3 col = mix(c1, c2, clamp(f*1.35,0.,1.));',
-      '  col = mix(col, c3, clamp(length(q)*0.85,0.,1.));',
-      '  if (li > .5) col = mix(col, vec3(0.10,0.16,0.45), .45);',
-      '  float vig = smoothstep(1.30, 0.10, length(q0*vec2(1.0,1.35)));',
-      '  float a = (0.14 + 0.32*f) * vig * mix(0.95, 0.55, li);',
-      '  gl_FragColor = vec4(col, a);',
-      '}'
-    ].join('\n');
-    function sh(type, src) {
-      var s = gl.createShader(type);
-      gl.shaderSource(s, src); gl.compileShader(s);
-      return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
-    }
-    var vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
-    if (vs && fs) {
-      var prog = gl.createProgram();
-      gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-      if (gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-        gl.useProgram(prog);
-        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
-        var loc = gl.getAttribLocation(prog, 'p');
-        gl.enableVertexAttribArray(loc);
-        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-        u.r = gl.getUniformLocation(prog, 'r');
-        u.t = gl.getUniformLocation(prog, 't');
-        u.li = gl.getUniformLocation(prog, 'li');
-        var SCALE = 0.55;
-        var resizeGL = function () {
-          var d2 = Math.min(window.devicePixelRatio || 1, 1.5);
-          fcv.width = Math.max(2, Math.floor(innerWidth * d2 * SCALE));
-          fcv.height = Math.max(2, Math.floor(innerHeight * d2 * SCALE));
-          fcv.style.width = innerWidth + 'px'; fcv.style.height = innerHeight + 'px';
-          gl.viewport(0, 0, fcv.width, fcv.height);
-        };
-        resizeGL();
-        window.addEventListener('resize', resizeGL, { passive: true });
-        var t0 = performance.now(), last = 0;
-        (function flow(now) {
-          requestAnimationFrame(flow);
-          if (D.hidden || !visible) return;
-          if (now - last < 33) return;            /* ~30fps：够顺滑又省电 */
-          last = now;
-          gl.uniform2f(u.r, fcv.width, fcv.height);
-          gl.uniform1f(u.t, (now - t0) / 1000);
-          gl.uniform1f(u.li, root.getAttribute('data-theme') === 'light' ? 1 : 0);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-        })(performance.now());
-      }
-    }
-  }
-
-  D.addEventListener('visibilitychange', function () { visible = !D.hidden; });
 })();
 </script>
 </body>

@@ -81,11 +81,16 @@ def build_shots():
                                   html.escape(title),
                                   ("　" + html.escape(desc)) if desc else "")
         )
-    return ('  <section id="shots" class="reveal">\n'
-            '    <div class="sec-head"><span class="tag">// screenshots</span><h2>界面</h2></div>\n'
-            '    <p class="hint">真机截图（MiuixX · 深色）。设置里可热切到 Material 3 界面。</p>\n'
+    return ('<section id="shots" class="reveal">\n'
+            '  <div class="wrap">\n'
+            '    <div class="sec-head">\n'
+            '      <div class="eyebrow">Screenshots</div>\n'
+            '      <h2>界面</h2>\n'
+            '      <p>真机截图（MiuixX · 深色）。设置里可热切到 Material 3 界面。</p>\n'
+            '    </div>\n'
             '    <div class="shots">\n%s\n    </div>\n'
-            '  </section>' % "\n".join(figs))
+            '  </div>\n'
+            '</section>' % "\n".join(figs))
 
 
 def build_changelog(v):
@@ -125,8 +130,14 @@ def build_page(v, dist):
     size_part = ('<span>· %s</span>' % human_size(size)) if size else ""
 
     tpl = io.open(os.path.join(ROOT, "scripts", "site_template.html"), encoding="utf-8").read()
+    gh_url = dist.get("github_release") or gh
     return (tpl.replace("{{NAME}}", html.escape(name))
                .replace("{{CODE}}", str(code))
+               .replace("{{CDN_COMMIT}}", html.escape(dist.get("cdn_commit") or ""))
+               .replace("{{APK_FILE}}", html.escape(dist.get("apk_file") or ""))
+               .replace("{{GH_URL}}", html.escape(gh_url))
+               .replace("{{SIZE_HUMAN}}", human_size(size) if size else "—")
+               .replace("{{SHA256}}", html.escape(sha or "—"))
                .replace("{{CDN_BTN}}", cdn_btn)
                .replace("{{GH_BTN}}", gh_btn)
                .replace("{{SHA_LINE}}", sha_line)
