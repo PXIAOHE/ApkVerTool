@@ -5,8 +5,8 @@
 改版本 / 改更新日志只需要改这一个文件，不再出现 build.sh 还写着 v1.4.5 这种事。
 """
 
-VERSION_NAME = "2.3.3"
-VERSION_CODE = 33
+VERSION_NAME = "2.3.4"
+VERSION_CODE = 34
 
 # 应用标识
 PACKAGE = "com.seagull.apkvertool"
@@ -18,8 +18,17 @@ TARGET_SDK = 36
 
 FOOTER = "ApkVerTool v%s · Seagull（海鸥）" % VERSION_NAME
 
+# 官网（GitHub Pages，静态托管、无服务器）；SITE_URL 同时给 App 的「官网」入口、
+# scripts/gen_site.py 与 README 用，换域名只改这里。
+SITE_URL = "https://pxiaohe.github.io/ApkVerTool/"
+
 # 更新日志：(版本, 日期, [条目…])，顺序即展示顺序（新 → 旧）
 CHANGELOG = [
+    ("2.3.4", "2026-10-12", [
+        "更新提示里的「去下载」改走国内直链（jsDelivr，commit 锁定），拉不动自动退回 GitHub Release",
+        "关于页新增「官网」入口；官网已上线：更新日志、国内直链下载、sha256 校验都在上面",
+        "清单新增 apk_url_cdn 字段，App 优先用它——不再受 GitHub 在国内的连通性影响",
+    ]),
     ("2.3.3", "2026-10-12", [
         "MiuixX 关于页「检查更新」的副标题只留「当前 v…（code …）」，去掉逗号后面那句「点一下问一次服务器」",
     ]),
@@ -203,11 +212,13 @@ def gen_java_version(path):
         "    public static final String NAME = %s;\n"
         "    public static final int CODE = %d;\n"
         "    public static final String FOOTER = %s;\n"
+        "    public static final String SITE = %s;\n"
         "    public static final String PACKAGE = %s;\n"
         "    public static final String PROVIDER_AUTHORITY = %s;\n"
         "    private AvtVersion() {}\n"
         "}\n"
     ) % (_java_str(VERSION_NAME), VERSION_CODE, _java_str(FOOTER),
+         _java_str(SITE_URL),
          _java_str(PACKAGE), _java_str(PROVIDER_AUTHORITY))
     with open(path, "w", encoding="utf-8") as f:
         f.write(src)

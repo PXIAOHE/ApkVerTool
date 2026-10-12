@@ -31,10 +31,15 @@ object UpdateChecker {
         val name: String,
         val notes: String,
         val apkUrl: String?,
+        /** 清单里的国内直链（jsDelivr，commit 锁定）；拿不到就用 apkUrl。 */
+        val apkUrlCdn: String?,
         val pageUrl: String,
         val sha256: String?,
         val minSupportedCode: Int,
     ) {
+        /** 下载地址：国内直链优先，其次 GitHub Release 资产。 */
+        val downloadUrl: String? get() = apkUrlCdn ?: apkUrl
+
         /** 语义版本比较（x.y.z）：两个来源都拿得到版本名，比流水号 versionCode 可靠。 */
         val isNewer: Boolean get() = semverGreater(name, AvtVersion.NAME)
 
@@ -132,6 +137,7 @@ object UpdateChecker {
             name = o.optString("version_name", ""),
             notes = o.optString("notes", ""),
             apkUrl = o.optString("apk_url").takeIf { it.isNotEmpty() },
+            apkUrlCdn = o.optString("apk_url_cdn").takeIf { it.isNotEmpty() },
             pageUrl = o.optString("page_url", PAGE),
             sha256 = o.optString("sha256").takeIf { it.isNotEmpty() },
             minSupportedCode = o.optInt("min_supported_code", 0),
@@ -163,6 +169,7 @@ object UpdateChecker {
             name = tag,
             notes = o.optString("body", ""),
             apkUrl = apk,
+            apkUrlCdn = null,
             pageUrl = o.optString("html_url", PAGE),
             sha256 = null,
             minSupportedCode = 0,

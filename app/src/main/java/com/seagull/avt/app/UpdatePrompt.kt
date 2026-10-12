@@ -51,9 +51,9 @@ fun UpdatePrompt() {
         },
         confirmButton = {
             TextButton(onClick = {
-                LinkOpener.open(ctx, info.apkUrl ?: info.pageUrl)
+                LinkOpener.open(ctx, info.downloadUrl ?: info.pageUrl)
                 UpdateChecker.dismiss()
-            }) { Text(if (info.apkUrl != null) "去下载" else "打开下载页") }
+            }) { Text(if (info.downloadUrl != null) "去下载" else "打开下载页") }
         },
         dismissButton = {
             Row {

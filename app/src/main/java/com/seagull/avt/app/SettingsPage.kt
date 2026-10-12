@@ -752,6 +752,15 @@ private fun AboutTab(
                 },
             )
             ArrowPreference(
+                title = "官网",
+                summary = "",
+                onClick = {
+                    if (!LinkOpener.open(context, AvtVersion.SITE)) {
+                        Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
+                    }
+                },
+            )
+            ArrowPreference(
                 title = "开源地址",
                 summary = "GitHub · PXIAOHE / ApkVerTool",
                 onClick = {
