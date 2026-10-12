@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
+<script>document.documentElement.classList.add('js');</script>
 <meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
 <meta name="theme-color" content="#0a0a12">
 <link rel="icon" href="./assets/icon.png">
@@ -172,12 +173,14 @@
   footer span.sp { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
 
   /* ── 滚动显现 ── */
-  .reveal { opacity:0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
-  .reveal.in { opacity:1; transform:none; }
+  /* 关键：只有 JS 可用时才把内容先藏起来做滚动显现；无 JS / 爬虫直接可见 */
+  .js .reveal { opacity:0; transform: translateY(26px);
+    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  .js .reveal.in { opacity:1; transform:none; }
 
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
-    .reveal { opacity:1; transform:none; }
+    .js .reveal { opacity:1 !important; transform:none !important; }
     #bg, .scan { display:none; }
   }
 </style>
