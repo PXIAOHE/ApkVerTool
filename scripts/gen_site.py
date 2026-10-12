@@ -62,7 +62,11 @@ def cdn_url(dist):
 
 
 def build_shots():
-    files = sorted(glob.glob(os.path.join(ROOT, "docs", "assets", "screen-*.jpg")))
+    # 顺序按 SHOT_CAPTIONS 的声明来（改写 → 外观 → 关于），多余的放后面
+    ordered = [os.path.join(ROOT, "docs", "assets", n) for n in SHOT_CAPTIONS]
+    files = [f for f in ordered if os.path.exists(f)]
+    files += [f for f in sorted(glob.glob(os.path.join(ROOT, "docs", "assets", "screen-*.jpg")))
+              if f not in files]
     if not files:
         return ""
     figs = []
