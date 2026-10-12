@@ -735,8 +735,7 @@ private fun AboutTab(
             )
             ArrowPreference(
                 title = "检查更新",
-                summary = if (UpdateChecker.checking) "正在检查…"
-                else "当前 v" + versionName + "（code " + versionCode + "），点一下问一次服务器",
+                summary = "",
                 onClick = {
                     if (!UpdateChecker.checking) {
                         scope.launch {
