@@ -696,6 +696,7 @@ private fun AboutTab(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     // 与 build.gradle.kts / PackageManager 保持一致的运行时读法（ApkEditorMiuix AboutPage 同款）
     val versionName = remember(context) {
         try {
@@ -731,6 +732,24 @@ private fun AboutTab(
                 title = "更新日志",
                 summary = "一个版本一页，左右滑动翻页",
                 onClick = onOpenChangelog,
+            )
+            ArrowPreference(
+                title = "检查更新",
+                summary = if (UpdateChecker.checking) "正在检查…"
+                else "当前 v" + versionName + "（code " + versionCode + "），点一下问一次服务器",
+                onClick = {
+                    if (!UpdateChecker.checking) {
+                        scope.launch {
+                            val info = withContext(Dispatchers.IO) { UpdateChecker.check(context) }
+                            val msg = when {
+                                info != null -> "发现新版本 v" + info.name
+                                UpdateChecker.lastError != null -> "检查失败：" + UpdateChecker.lastError
+                                else -> "已是最新版本"
+                            }
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
             )
             ArrowPreference(
                 title = "开源地址",

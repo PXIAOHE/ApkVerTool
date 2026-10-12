@@ -39,12 +39,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.seagull.avt.R
 import com.seagull.avt.app.AvtVersion
+import com.seagull.avt.app.UpdateChecker
 import com.seagull.avt.md3.bars.BottomBarStyle
 import com.seagull.avt.md3.components.AvtButton
 import com.seagull.avt.md3.components.AvtCard
@@ -62,7 +64,9 @@ import com.seagull.avt.md3.icons.IcoReceiptLong
 import com.seagull.avt.md3.icons.IcoSave
 import com.seagull.avt.md3.icons.IcoUpload
 import com.seagull.avt.md3.icons.IcoVpnKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val SETTINGS_TABS = listOf(
     AvtTab("外观", IcoPalette),
@@ -398,6 +402,8 @@ private fun OutputPage(state: SettingsUiState, host: SettingsHost, inner: Paddin
 
 @Composable
 private fun AboutPage(host: SettingsHost, inner: PaddingValues) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
     PageColumn(inner) {
         item {
             AvtCard {
@@ -451,6 +457,26 @@ private fun AboutPage(host: SettingsHost, inner: PaddingValues) {
                     onClick = host::openChangelog,
                     icon = IcoReceiptLong,
                     modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                AvtButton(
+                    text = if (UpdateChecker.checking) "正在检查…" else "检查更新",
+                    onClick = {
+                        if (!UpdateChecker.checking) {
+                            scope.launch {
+                                val info = withContext(Dispatchers.IO) { UpdateChecker.check(ctx) }
+                                val msg = when {
+                                    info != null -> "发现新版本 v" + info.name
+                                    UpdateChecker.lastError != null -> "检查失败：" + UpdateChecker.lastError
+                                    else -> "已是最新版本"
+                                }
+                                android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    icon = Icons.Filled.Refresh,
+                    modifier = Modifier.fillMaxWidth(),
+                    emphasis = AvtEmphasis.Outline,
                 )
             }
         }

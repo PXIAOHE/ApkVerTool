@@ -1,9 +1,9 @@
 {
-  "version_code": 30,
-  "version_name": "2.3.0",
-  "notes": "新增内置更新检查（冷启动自动查 + 提示可忽略/稍后）；更新清单走 jsDelivr，退路是 GitHub Releases API。",
-  "apk_url": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.0/ApkVerTool-v2.3.0.apk",
+  "version_code": 31,
+  "version_name": "2.3.1",
+  "notes": "修复：更新检查只信 jsDelivr 清单，而它给 @main 最长 12 小时缓存，发新版后半天才会被发现。现在清单没报新版时会再问一次 GitHub Releases API，两边取版本更高的那个。",
+  "apk_url": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.1/ApkVerTool-v2.3.1.apk",
   "page_url": "https://github.com/PXIAOHE/ApkVerTool/releases/latest",
-  "sha256": "edc694872596af52b6d90ed22ed80205be953546884b82e78a6ddda59a927ba8",
+  "sha256": "d2e33c488660ca491bc6127c5a9b801f0934082b427fbce18ede45ae6b73cc16",
   "min_supported_code": 0
 }
