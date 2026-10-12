@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
+<meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
+<style>
+  :root { color-scheme: light dark; --fg:#1b1b1f; --bg:#fdfcff; --muted:#5a5a63; --line:#e3e1e8; --card:#f4f3f8; --accent:#4c6ef5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e5e2e9; --bg:#131316; --muted:#9d9aa4; --line:#2f2e34; --card:#1d1c21; --accent:#8ea1ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font: 16px/1.75 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: .3px; }
+  h2 { font-size: 18px; margin: 38px 0 12px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  .date { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 14px; }
+  .btn { display:inline-block; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line);
+    text-decoration: none; color: var(--fg); font-weight: 600; font-size: 15px; }
+  .btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+  .kv { display:flex; gap:10px; flex-wrap:wrap; font-size: 14px; color: var(--muted); margin-top: 6px; }
+  code { background: rgba(127,127,127,.14); border-radius: 6px; padding: 2px 6px;
+    font-size: 13px; word-break: break-all; }
+  ul { padding-left: 22px; margin: 6px 0 0; }
+  li { margin: 3px 0; }
+  a.plain { color: var(--accent); }
+  .warn { font-size: 14px; color: var(--muted); }
+  footer { color: var(--muted); font-size: 13px; margin-top: 44px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ApkVerTool</h1>
+  <p class="sub">安卓 APK 清单查看与修改 · 条目增删 · 重打包重签名 —— 引擎全手写，不依赖 apktool / aapt2</p>
+
+  <div class="card">
+    <div class="kv"><span>当前版本</span><strong>v{{NAME}}</strong><span>（versionCode {{CODE}}）</span>{{SIZE_PART}}</div>
+    <div class="btns">
+      {{CDN_BTN}}
+      {{GH_BTN}}
+    </div>
+    {{SHA_LINE}}
+    <p class="warn">系统要求：{{MIN_ANDROID}} 及以上。下载后直接安装；首次安装需在系统里允许「未知来源」。{{SHA_HINT}}</p>
+  </div>
+
+  <h2>更新日志</h2>
+{{CHANGELOG}}
+
+  <h2>能做什么</h2>
+  <ul>
+    <li>改 versionName / versionCode / versionCodeMajor / minSdk / targetSdk / 包名 / 应用名</li>
+    <li>增删 APK 内任意条目或目录前缀，支持 XAPK / APKS / split 多包容器逐个处理并回填元数据</li>
+    <li>体检：版本、SDK、DEX、ABI、权限统计、加固壳识别、签名者证书指纹</li>
+    <li>V1 / V2 / V3 / V4 重签名，重打包保持 4 字节与 16KB 对齐，产物可直接安装</li>
+    <li>两套界面（MiuixX / Material 3）、莫奈取色、液态玻璃栏体</li>
+  </ul>
+
+  <h2>链接</h2>
+  <ul>
+    <li><a class="plain" href="https://github.com/{{REPO}}">GitHub 仓库（源码 / 问题反馈）</a></li>
+    <li><a class="plain" href="./privacy.html">隐私政策</a></li>
+    <li><a class="plain" href="https://github.com/{{REPO}}/releases">全部历史版本</a></li>
+  </ul>
+
+  <footer>
+    Apache-2.0 开源 · 仅用于处理你有权处理的 APK 文件 · 本页由 <code>scripts/gen_site.py</code> 依据 <code>version.py</code> 自动生成
+  </footer>
+</main>
+</body>
+</html>

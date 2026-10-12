@@ -6,32 +6,32 @@
 <title>ApkVerTool · 安卓 APK 版本号修改与重打包工具</title>
 <meta name="description" content="ApkVerTool：纯自研引擎的安卓 APK 清单查看/修改、条目增删、重打包与重签名工具，不依赖 apktool / aapt2。">
 <style>
-  :root {{ color-scheme: light dark; --fg:#1b1b1f; --bg:#fdfcff; --muted:#5a5a63; --line:#e3e1e8; --card:#f4f3f8; --accent:#4c6ef5; }}
-  @media (prefers-color-scheme: dark) {{
-    :root {{ --fg:#e5e2e9; --bg:#131316; --muted:#9d9aa4; --line:#2f2e34; --card:#1d1c21; --accent:#8ea1ff; }}
-  }}
-  * {{ box-sizing: border-box; }}
-  body {{ margin:0; background:var(--bg); color:var(--fg);
-    font: 16px/1.75 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }}
-  main {{ max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }}
-  h1 {{ font-size: 30px; margin: 0 0 4px; letter-spacing: .3px; }}
-  h2 {{ font-size: 18px; margin: 38px 0 12px; }}
-  h3 {{ font-size: 16px; margin: 22px 0 6px; }}
-  .date {{ color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }}
-  .sub {{ color: var(--muted); margin: 0 0 24px; }}
-  .card {{ background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }}
-  .btns {{ display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 14px; }}
-  .btn {{ display:inline-block; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line);
-    text-decoration: none; color: var(--fg); font-weight: 600; font-size: 15px; }}
-  .btn.primary {{ background: var(--accent); border-color: transparent; color: #fff; }}
-  .kv {{ display:flex; gap:10px; flex-wrap:wrap; font-size: 14px; color: var(--muted); margin-top: 6px; }}
-  code {{ background: rgba(127,127,127,.14); border-radius: 6px; padding: 2px 6px;
-    font-size: 13px; word-break: break-all; }}
-  ul {{ padding-left: 22px; margin: 6px 0 0; }}
-  li {{ margin: 3px 0; }}
-  a.plain {{ color: var(--accent); }}
-  .warn {{ font-size: 14px; color: var(--muted); }}
-  footer {{ color: var(--muted); font-size: 13px; margin-top: 44px; border-top: 1px solid var(--line); padding-top: 16px; }}
+  :root { color-scheme: light dark; --fg:#1b1b1f; --bg:#fdfcff; --muted:#5a5a63; --line:#e3e1e8; --card:#f4f3f8; --accent:#4c6ef5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e5e2e9; --bg:#131316; --muted:#9d9aa4; --line:#2f2e34; --card:#1d1c21; --accent:#8ea1ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font: 16px/1.75 -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: .3px; }
+  h2 { font-size: 18px; margin: 38px 0 12px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  .date { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 14px; }
+  .btn { display:inline-block; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line);
+    text-decoration: none; color: var(--fg); font-weight: 600; font-size: 15px; }
+  .btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+  .kv { display:flex; gap:10px; flex-wrap:wrap; font-size: 14px; color: var(--muted); margin-top: 6px; }
+  code { background: rgba(127,127,127,.14); border-radius: 6px; padding: 2px 6px;
+    font-size: 13px; word-break: break-all; }
+  ul { padding-left: 22px; margin: 6px 0 0; }
+  li { margin: 3px 0; }
+  a.plain { color: var(--accent); }
+  .warn { font-size: 14px; color: var(--muted); }
+  footer { color: var(--muted); font-size: 13px; margin-top: 44px; border-top: 1px solid var(--line); padding-top: 16px; }
 </style>
 </head>
 <body>
@@ -40,17 +40,46 @@
   <p class="sub">安卓 APK 清单查看与修改 · 条目增删 · 重打包重签名 —— 引擎全手写，不依赖 apktool / aapt2</p>
 
   <div class="card">
-    <div class="kv"><span>当前版本</span><strong>v{name}</strong><span>（versionCode {code}）</span>{size_part}</div>
+    <div class="kv"><span>当前版本</span><strong>v2.3.3</strong><span>（versionCode 33）</span><span>· 3.75 MB</span></div>
     <div class="btns">
-      {cdn_btn}
-      {gh_btn}
+      <a class="btn primary" href="https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@7446579ee74f7ccff2d03ffd6dec6c99aeaa8572/dist/ApkVerTool-v2.3.3.apk">国内直链下载（jsDelivr）</a>
+      <a class="btn" href="https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.3/ApkVerTool-v2.3.3.apk">GitHub Release 下载</a>
     </div>
-    {sha_line}
-    <p class="warn">系统要求：Android 8.0（API 26）及以上。下载后直接安装；首次安装需在系统里允许「未知来源」。{sha_hint}</p>
+    <div class="kv"><span>SHA-256</span><code>33a363938574f0130824143f565e9722058757cbeee9e904ad858af8fc14cd3f</code></div>
+    <p class="warn">系统要求：Android 13（API 33） 及以上。下载后直接安装；首次安装需在系统里允许「未知来源」。 下载后可自行核对上面的 SHA-256。</p>
   </div>
 
   <h2>更新日志</h2>
-{changelog}
+      <section class="ver">
+        <h3>v2.3.3 <span class="date">2026-10-12</span></h3>
+        <ul>
+        <li>MiuixX 关于页「检查更新」的副标题只留「当前 v…（code …）」，去掉逗号后面那句「点一下问一次服务器」</li>
+        </ul>
+      </section>
+      <section class="ver">
+        <h3>v2.3.2 <span class="date">2026-10-12</span></h3>
+        <ul>
+        <li>补上 2.3.0 更新日志里承诺、但当时没做的「设置里也能手动查」：关于页新增「检查更新」</li>
+        <li>MiuixX 与 MD3 两套界面都有入口，检查完给一句结果（发现新版本 / 已是最新 / 失败原因）</li>
+        <li>更新清单换成 v2.3.1 的发布内容与 sha256</li>
+        </ul>
+      </section>
+      <section class="ver">
+        <h3>v2.3.1 <span class="date">2026-10-12</span></h3>
+        <ul>
+        <li>修复：更新检查只信 jsDelivr 清单，而它给 @main 最长 12 小时缓存，发新版后半天才会被发现</li>
+        <li>现在清单没报新版时再问一次 GitHub Releases API，两边取版本更高的那个；清单已经报出新版就只发一个请求</li>
+        <li>清单补上发版包 sha256（v2.3.0 的 CI 产物）</li>
+        </ul>
+      </section>
+      <section class="ver">
+        <h3>v2.3.0 <span class="date">2026-10-12</span></h3>
+        <ul>
+        <li>新增内置更新检查：冷启动自动查一次（12 小时缓存），设置里也能手动查</li>
+        <li>发现新版本弹提示，带更新内容；可「稍后」或「忽略此版本」（同一版本不再打扰）</li>
+        <li>更新清单走 jsDelivr，取不到自动退 GitHub Releases API；版本按 versionCode 比较</li>
+        </ul>
+      </section>
 
   <h2>能做什么</h2>
   <ul>
@@ -63,9 +92,9 @@
 
   <h2>链接</h2>
   <ul>
-    <li><a class="plain" href="https://github.com/{repo}">GitHub 仓库（源码 / 问题反馈）</a></li>
+    <li><a class="plain" href="https://github.com/PXIAOHE/ApkVerTool">GitHub 仓库（源码 / 问题反馈）</a></li>
     <li><a class="plain" href="./privacy.html">隐私政策</a></li>
-    <li><a class="plain" href="https://github.com/{repo}/releases">全部历史版本</a></li>
+    <li><a class="plain" href="https://github.com/PXIAOHE/ApkVerTool/releases">全部历史版本</a></li>
   </ul>
 
   <footer>

@@ -23,11 +23,27 @@ UI 提供两套完整界面：**[Miuix](https://github.com/compose-miuix-ui/miui
 
 | 项目 | 说明 |
 | :--- | :--- |
-| **当前版本** | `2.2.0`（`versionCode 28`） |
+| **当前版本** | `2.3.3`（`versionCode 33`） |
 | **包名** | `com.seagull.apkvertool` |
 | **最低系统** | **Android 13（API 33）** 及以上 |
 | **目标 SDK** | API 36（`compileSdk 37`） |
 | **支持容器** | `.apk` 单包 / 多选批量 / `.xapk` / `.apks` / split 压缩包 |
+
+<!-- DL:BEGIN 自动生成，勿手改：python3 scripts/gen_site.py -->
+
+### ⬇️ 下载 v2.3.3（`versionCode 33`）
+
+| 渠道 | 链接 |
+| :--- | :--- |
+| **国内直链（jsDelivr，推荐）** | [ApkVerTool-v2.3.3.apk](https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@7446579ee74f7ccff2d03ffd6dec6c99aeaa8572/dist/ApkVerTool-v2.3.3.apk) |
+| GitHub Release（兜底） | [ApkVerTool-v2.3.3.apk](https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.3/ApkVerTool-v2.3.3.apk) |
+| 官网 / 隐私政策 | [官网](https://pxiaohe.github.io/ApkVerTool/) · [隐私政策](https://pxiaohe.github.io/ApkVerTool/privacy.html) |
+
+产物校验：`33a363938574f0130824143f565e9722058757cbeee9e904ad858af8fc14cd3f`
+
+体积 3.75 MB · 系统要求 Android 13（API 33） 及以上 · 下载后可直接安装（首次需允许「未知来源」）
+
+<!-- DL:END -->
 
 ---
 
