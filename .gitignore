@@ -34,3 +34,6 @@ __pycache__/
 !dist/
 !dist/latest.json
 !dist/*.apk
+
+# 截图流水线中间产物（只保留 docs/assets/screen-*.jpg）
+shots/

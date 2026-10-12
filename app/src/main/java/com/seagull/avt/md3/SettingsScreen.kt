@@ -490,13 +490,14 @@ private fun AboutPage(host: SettingsHost, inner: PaddingValues) {
                 LinkRow("Material 3 设计规范：m3.material.io") {
                     host.openUrl("https://m3.material.io/")
                 }
-                LinkRow("官网：pxiaohe.github.io/ApkVerTool") {
-                    host.openUrl(AvtVersion.SITE)
-                }
             }
         }
         item {
             AvtCard {
+                LinkRow("官网：pxiaohe.github.io/ApkVerTool") {
+                    host.openUrl(AvtVersion.SITE)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
