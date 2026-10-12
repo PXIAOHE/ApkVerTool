@@ -4,6 +4,6 @@
   "notes": "新增内置更新检查（冷启动自动查 + 提示可忽略/稍后）；更新清单走 jsDelivr，退路是 GitHub Releases API。",
   "apk_url": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.0/ApkVerTool-v2.3.0.apk",
   "page_url": "https://github.com/PXIAOHE/ApkVerTool/releases/latest",
-  "sha256": "",
+  "sha256": "edc694872596af52b6d90ed22ed80205be953546884b82e78a6ddda59a927ba8",
   "min_supported_code": 0
 }
