@@ -5,8 +5,8 @@
 改版本 / 改更新日志只需要改这一个文件，不再出现 build.sh 还写着 v1.4.5 这种事。
 """
 
-VERSION_NAME = "2.2.1"
-VERSION_CODE = 29
+VERSION_NAME = "2.3.0"
+VERSION_CODE = 30
 
 # 应用标识
 PACKAGE = "com.seagull.apkvertool"
@@ -20,6 +20,11 @@ FOOTER = "ApkVerTool v%s · Seagull（海鸥）" % VERSION_NAME
 
 # 更新日志：(版本, 日期, [条目…])，顺序即展示顺序（新 → 旧）
 CHANGELOG = [
+    ("2.3.0", "2026-10-12", [
+        "新增内置更新检查：冷启动自动查一次（12 小时缓存），设置里也能手动查",
+        "发现新版本弹提示，带更新内容；可「稍后」或「忽略此版本」（同一版本不再打扰）",
+        "更新清单走 jsDelivr，取不到自动退 GitHub Releases API；版本按 versionCode 比较",
+    ]),
     ("2.2.1", "2026-10-12", [
         "MD3「取色参数」下拉对齐 MiuixX：贴右展开、从右上角缩放弹出（spring 0.82/362.5 + 200/150ms 淡入淡出），向下展开、宽度 200dp",
         "MD3 补触摸震动反馈：点开下拉轻触、选中确认，开关 / 折叠 / 按钮 / 底栏 tab 都有反馈",

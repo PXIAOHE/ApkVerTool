@@ -1,0 +1,9 @@
+{
+  "version_code": 30,
+  "version_name": "2.3.0",
+  "notes": "新增内置更新检查（冷启动自动查 + 提示可忽略/稍后）；更新清单走 jsDelivr，退路是 GitHub Releases API。",
+  "apk_url": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.0/ApkVerTool-v2.3.0.apk",
+  "page_url": "https://github.com/PXIAOHE/ApkVerTool/releases/latest",
+  "sha256": "",
+  "min_supported_code": 0
+}

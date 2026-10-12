@@ -35,11 +35,22 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AvtApp() {
+    // 内置更新检查：冷启动后异步跑一次（12h 内不重复），有新版弹提示；两套 UI 共用
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (UpdateChecker.shouldAutoCheck(ctx)) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                UpdateChecker.check(ctx)
+            }
+        }
+    }
     // uiStyle==1 → MD3 整套界面（material3 真组件 + AvtTheme）；
     // uiStyle==0 → MiuixX（miuix 组件 + 毛玻璃）。
     // 切换是纯热切：uiStyle 变化直接重组换套，不 recreate、不重置导航栈。
     if (UiConfigState.uiStyle == 1) {
         Md3App()
+        // MD3 分支是 early return，弹窗得在这儿也挂一份（否则只有 MiuixX 那边会弹）
+        UpdatePrompt()
         return
     }
     val dark = when (ThemeState.mode) {
@@ -120,4 +131,8 @@ fun AvtApp() {
             AvtNavigation(AvtNav.backStack)
         }
     }
+
+
+    // 更新提示（M3 弹窗，两套 UI 都能弹）
+    UpdatePrompt()
 }
