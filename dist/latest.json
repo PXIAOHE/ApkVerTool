@@ -1,9 +1,9 @@
 {
-  "version_name": "2.4.0",
-  "version_code": 35,
-  "apk_file": "ApkVerTool-v2.4.0.apk",
-  "sha256": "2b87203554b7c2235fd1fda72045dcf4bc92ceee7fd70b67b26312d675cb79de",
-  "size_bytes": 3952894,
-  "cdn_commit": "3235aed8a68adbe3f554663076b675c0983fd892",
-  "github_release": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.4.0/ApkVerTool-v2.4.0.apk"
+  "version_name": "2.4.1",
+  "version_code": 36,
+  "apk_file": "ApkVerTool-v2.4.1.apk",
+  "sha256": "e2d65d48185028c39f950aeee70ac2207b970f21349cb9610f529145e193c0ea",
+  "size_bytes": 3952900,
+  "cdn_commit": "",
+  "github_release": "https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.4.1/ApkVerTool-v2.4.1.apk"
 }
