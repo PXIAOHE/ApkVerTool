@@ -80,8 +80,19 @@ def commit_and_push(message, paths):
         print("· 没有变化，跳过提交：%s" % message.splitlines()[0])
         return None
     run("git", "commit", "-m", message)
-    run("git", "push", "origin", "HEAD:main")
+    push_with_retry()
     return out("git", "rev-parse", "HEAD")
+
+
+def push_with_retry():
+    """main 可能被别的事件同时推进：rebase 后重试一次，仍失败就抛错让 CI 变红。"""
+    try:
+        run("git", "push", "origin", "HEAD:main")
+        return
+    except subprocess.CalledProcessError:
+        print("· push 被拒，rebase 后重试一次")
+    subprocess.run(["git", "pull", "--rebase", "--quiet", "origin", "main"], cwd=ROOT, check=True)
+    run("git", "push", "origin", "HEAD:main")
 
 
 def main():
