@@ -124,10 +124,10 @@ jobs:
           echo "---- release-notes.md ----"
           cat release-notes.md
 
-      # 打 v* 标签或手动触发时，顺便发成 GitHub Release（用官方 gh CLI，无第三方依赖）。
-      # push 到 main 的日常构建只上传 artifact，不发版，避免每次提交都产生 Release。
+      # 每次构建都发 Release（gh CLI，无第三方依赖）：
+      # push 到 main → 用 version.py 的版本号当 tag（v<版本>）；打 v* 标签 → 用标签名。
+      # 同一版本重复构建走「覆盖上传 APK + 刷新说明」，不会报 tag 已存在。
       - name: Publish to GitHub Releases
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -135,6 +135,14 @@ jobs:
           TAG="${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.tag }}"
           APK="${{ steps.apk.outputs.path }}"
           echo "发布 $TAG <- $APK"
+
+          # push 到 main 且这个版本已经发过 → 说明本次没改 version.py，不重复发版（避免每次提交都刷 Release）
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ] \
+             && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::v${{ steps.ver.outputs.name }} 已存在，本次不改版本号 → 跳过发布"
+            echo "SKIP_RELEASE=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "该 Release 已存在，覆盖上传 APK + 刷新说明"
             gh release upload "$TAG" "$APK" --clobber
@@ -147,3 +155,17 @@ jobs:
               --notes-file release-notes.md \
               --latest
           fi
+
+      # 发版后把产物同步进 dist/、刷新官网与 README，并把改动提交回 main。
+      # 两次提交都带 [skip ci]，不会被自己再触发一轮构建；docs/ 的改动会触发 pages.yml 部署。
+      - name: Sync dist and site
+        if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && env.SKIP_RELEASE != '1'
+        run: |
+          set -e
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --quiet origin main || true
+          python3 scripts/ci_publish.py \
+            --apk "${{ steps.apk.outputs.path }}" \
+            --name "${{ steps.ver.outputs.name }}" \
+            --code "${{ steps.ver.outputs.code }}"
