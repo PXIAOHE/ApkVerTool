@@ -176,7 +176,7 @@ jobs:
       # 用 GITHUB_TOKEN 推的提交不会再触发别的 workflow（GitHub 防递归），
       # 所以官网部署要显式派发一次；docs/ 真的变了才有意义，没变化时派发也无副作用。
       - name: Trigger site deploy
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        if: env.SITE_CHANGED == '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -149,7 +149,16 @@ def main():
         ["dist", "docs", "README.md"],
     )
     print("· site commit: %s" % (sha2 or "（无变化）"))
+    mark_changed()
     print("· 完成：Release v%s 已发布，dist/ 与官网已更新" % args.name)
+
+
+def mark_changed():
+    """告诉 workflow「确实改了文件」，用来决定要不要派发 Pages 部署。"""
+    env_file = os.environ.get("GITHUB_ENV")
+    if env_file:
+        with open(env_file, "a", encoding="utf-8") as f:
+            f.write("SITE_CHANGED=1\n")
 
 
 if __name__ == "__main__":
