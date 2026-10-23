@@ -23,7 +23,7 @@ UI 提供两套完整界面：**[Miuix](https://github.com/compose-miuix-ui/miui
 
 | 项目 | 说明 |
 | :--- | :--- |
-| **当前版本** | `2.3.4`（`versionCode 34`） |
+| **当前版本** | `2.4.0`（`versionCode 35`） |
 | **包名** | `com.seagull.apkvertool` |
 | **最低系统** | **Android 13（API 33）** 及以上 |
 | **目标 SDK** | API 36（`compileSdk 37`） |
@@ -31,15 +31,15 @@ UI 提供两套完整界面：**[Miuix](https://github.com/compose-miuix-ui/miui
 
 <!-- DL:BEGIN 自动生成，勿手改：python3 scripts/gen_site.py -->
 
-### ⬇️ 下载 v2.3.4（`versionCode 34`）
+### ⬇️ 下载 v2.4.0（`versionCode 35`）
 
 | 渠道 | 链接 |
 | :--- | :--- |
-| **国内直链（jsDelivr，推荐）** | [ApkVerTool-v2.3.4.apk](https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@0fcd6448e03ea30d726cc46b791c5625c28e370d/dist/ApkVerTool-v2.3.4.apk) |
-| GitHub Release（兜底） | [ApkVerTool-v2.3.4.apk](https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.3.4/ApkVerTool-v2.3.4.apk) |
+| **国内直链（jsDelivr，推荐）** | [ApkVerTool-v2.4.0.apk](https://cdn.jsdelivr.net/gh/PXIAOHE/ApkVerTool@3235aed8a68adbe3f554663076b675c0983fd892/dist/ApkVerTool-v2.4.0.apk) |
+| GitHub Release（兜底） | [ApkVerTool-v2.4.0.apk](https://github.com/PXIAOHE/ApkVerTool/releases/download/v2.4.0/ApkVerTool-v2.4.0.apk) |
 | 官网 / 隐私政策 | [官网](https://pxiaohe.github.io/ApkVerTool/) · [隐私政策](https://pxiaohe.github.io/ApkVerTool/privacy.html) |
 
-产物校验：`7571bf83de1bdaf4ea16a5684a11a726a72b88984c9d3f1f2ba02534ddbe3fb1`
+产物校验：`2b87203554b7c2235fd1fda72045dcf4bc92ceee7fd70b67b26312d675cb79de`
 
 体积 3.77 MB · 系统要求 Android 13（API 33） 及以上 · 下载后可直接安装（首次需允许「未知来源」）
 
