@@ -51,6 +51,9 @@ class MainUiState {
     var targetSdk by mutableStateOf("")
     var appLabel by mutableStateOf("")
     var packageName by mutableStateOf("")
+    /** 选中的新图标原图字节；null = 不改图标。 */
+    var iconBytes by mutableStateOf<ByteArray?>(null)
+    var iconName by mutableStateOf("")
 
     /** 折叠分组状态：key -> 是否展开。收起的分组整组字段都不参与改写。 */
     val foldOpen = mutableStateMapOf("ver" to true, "sdk" to false, "id" to false)

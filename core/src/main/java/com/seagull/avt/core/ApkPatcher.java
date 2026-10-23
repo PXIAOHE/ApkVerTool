@@ -28,6 +28,10 @@ public final class ApkPatcher {
         public int level = Deflater.BEST_SPEED;
         /** 清单里没有 versionCode 的包（split APK）跳过版本字段，避免给分片写入无意义属性。 */
         public boolean skipVersionIfAbsent = true;
+        /** 新图标（用户选的图片原始字节）；null = 不改图标。 */
+        public byte[] iconImage;
+        /** 图标缩放实现：App 用 BitmapFactory，CLI 用 ImageIO。 */
+        public IconReplacer.Scaler iconScaler;
 
         public Job copy() {
             Job j = new Job();
@@ -40,6 +44,8 @@ public final class ApkPatcher {
             j.opt = opt;
             j.level = level;
             j.skipVersionIfAbsent = skipVersionIfAbsent;
+            j.iconImage = iconImage;
+            j.iconScaler = iconScaler;
             return j;
         }
     }
@@ -101,6 +107,25 @@ public final class ApkPatcher {
         }
         if (o.rename != null && o.rename.manifestChanged) o.changed = true;
         if (!edit.delete.isEmpty() || !job.edit.replace.isEmpty()) o.changed = true;
+
+        // 2.5) 图标替换：清单 android:icon → arsc 全部配置 → res/ 下的图片条目
+        //      失败必须抛出去：选了图标却没换上还报「成功」是假话
+        if (job.iconImage != null) {
+            if (job.iconScaler == null) throw new Exception("图标替换缺少图片缩放实现");
+            byte[] arscNow = edit.replace.containsKey("resources.arsc")
+                    ? edit.replace.get("resources.arsc") : null;
+            try {
+                IconReplacer.Result ir = IconReplacer.build(src, job.iconImage, job.iconScaler, arscNow);
+                for (java.util.Map.Entry<String, byte[]> e : ir.replace.entrySet()) {
+                    edit.replace.put(e.getKey(), e.getValue());
+                }
+                o.say(ir.summary());
+                o.changed = true;
+            } catch (IconReplacer.NoIcon noIcon) {
+                // 分包（config.*.apk 之类）本来就没有 icon，不算失败
+                o.say("图标: 该包里没有 android:icon（分包正常现象），跳过");
+            }
+        }
 
         // 3) 重打包
         File stage = File.createTempFile("avt_stage", ".apk", out.getAbsoluteFile().getParentFile());

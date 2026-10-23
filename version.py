@@ -5,15 +5,15 @@
 改版本 / 改更新日志只需要改这一个文件，不再出现 build.sh 还写着 v1.4.5 这种事。
 """
 
-VERSION_NAME = "2.3.4"
-VERSION_CODE = 34
+VERSION_NAME = "2.4.0"
+VERSION_CODE = 35
 
 # 应用标识
 PACKAGE = "com.seagull.apkvertool"
 APP_LABEL = "ApkVerTool"
 PROVIDER_AUTHORITY = PACKAGE + ".files"
 
-MIN_SDK = 26
+MIN_SDK = 33   # 与 app/build.gradle.kts 的 minSdk 同源（那边直接读这里）
 TARGET_SDK = 36
 
 FOOTER = "ApkVerTool v%s · Seagull（海鸥）" % VERSION_NAME
@@ -24,6 +24,14 @@ SITE_URL = "https://pxiaohe.github.io/ApkVerTool/"
 
 # 更新日志：(版本, 日期, [条目…])，顺序即展示顺序（新 → 旧）
 CHANGELOG = [
+    ("2.4.0", "2026-10-23", [
+        "新增应用图标替换：入口在「应用标识（应用名 / 包名）」折叠组里，MiuixX 与 Material 3 两套界面都有",
+        "按 APK 内每个密度条目的原尺寸逐张重采样（PNG / WebP / JPEG 只读头部取宽高），自适应图标会跟到 foreground / background / monochrome",
+        "纯矢量 / 自适应图标兜底：新图作为 res/avticon.png 写进包内，并在 resources.arsc 里把图标资源改指到它（字符串池尾部追加，已有索引不变）",
+        "图标与包名联动可以同时用：arsc 改动叠加，不会互相覆盖",
+        "桌面 CLI patch / bundle 新增 --icon FILE",
+        "修复：minSdk / targetSdk 原来在 version.py 与 build.gradle.kts 各写一份（26 vs 33 已经漂了），现在 Gradle 直接读 version.py",
+    ]),
     ("2.3.4", "2026-10-12", [
         "更新提示里的「去下载」改走国内直链（jsDelivr，commit 锁定），拉不动自动退回 GitHub Release",
         "关于页新增「官网」入口；官网已上线：更新日志、国内直链下载、sha256 校验都在上面",

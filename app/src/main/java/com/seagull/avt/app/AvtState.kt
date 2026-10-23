@@ -4,6 +4,8 @@
 package com.seagull.avt.app
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
@@ -338,6 +340,7 @@ object AvtRunner {
         dropEntries: List<String>,
         resign: Boolean, v1: Boolean, v2: Boolean, v3: Boolean, v4: Boolean,
         p12: ByteArray?, pass: CharArray?,
+        iconImage: ByteArray? = null,
     ): ApkPatcher.Job {
         val job = ApkPatcher.Job()
         if (versionName.isNotBlank()) job.manifest.versionName = versionName.trim()
@@ -348,6 +351,10 @@ object AvtRunner {
         if (label.isNotBlank()) job.manifest.label = label.trim()
         if (newPackage.isNotBlank()) job.newPackage = newPackage.trim()
         dropEntries.forEach { if (it.isNotBlank()) job.edit.delete.add(it.trim()) }
+        if (iconImage != null && iconImage.isNotEmpty()) {
+            job.iconImage = iconImage
+            job.iconScaler = AvtIcon.scaler
+        }
         for ((k, v) in AvtState.putMap) job.edit.replace[k] = v
         job.resign = resign
         job.opt.v1 = v1
@@ -363,7 +370,8 @@ object AvtRunner {
 
     fun hasAnyChange(job: ApkPatcher.Job): Boolean =
         !job.manifest.isEmpty() || job.newPackage != null ||
-                job.edit.delete.isNotEmpty() || job.edit.replace.isNotEmpty()
+                job.edit.delete.isNotEmpty() || job.edit.replace.isNotEmpty() ||
+                job.iconImage != null
 
     /**
      * 批量处理整个队列；返回 (成功数, 失败数)。阻塞调用，须在后台线程。
@@ -428,5 +436,36 @@ object AvtRunner {
             say("中转副本已清理（APK只留在指定目录里）")
         }
         return true
+    }
+}
+
+/**
+ * 图标缩放：和 CLI 的 ImageIO 版同一套行为——居中取最大内接正方形，缩放到目标尺寸，输出 PNG。
+ * 解码/编码交给 Android 的 BitmapFactory，core 只收字节，保持纯 JDK。
+ */
+object AvtIcon {
+    val scaler: com.seagull.avt.core.IconReplacer.Scaler =
+        com.seagull.avt.core.IconReplacer.Scaler { image, w, h -> scale(image, w, h) }
+
+    fun scale(image: ByteArray, w: Int, h: Int): ByteArray {
+        val src = BitmapFactory.decodeByteArray(image, 0, image.size)
+            ?: throw IllegalStateException("认不出这个图片格式")
+        val side = minOf(src.width, src.height)
+        if (side <= 0) throw IllegalStateException("图片尺寸为 0")
+        val cropped =
+            if (src.width == side && src.height == side) src
+            else Bitmap.createBitmap(src, (src.width - side) / 2, (src.height - side) / 2, side, side)
+        val dst = Bitmap.createScaledBitmap(cropped, w, h, true)
+        val out = java.io.ByteArrayOutputStream(1 shl 15)
+        dst.compress(Bitmap.CompressFormat.PNG, 100, out)
+        return out.toByteArray()
+    }
+
+    /** 选图时先试解码一次：坏图当场拒绝，别等点「开始修改」才失败。 */
+    fun readable(image: ByteArray): Boolean {
+        val opts = BitmapFactory.Options()
+        opts.inJustDecodeBounds = true
+        BitmapFactory.decodeByteArray(image, 0, image.size, opts)
+        return opts.outWidth > 0 && opts.outHeight > 0
     }
 }

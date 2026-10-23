@@ -129,6 +129,7 @@ public class AvtCli {
         System.out.println("  --target-sdk N      新 targetSdkVersion");
         System.out.println("  --package P         新包名（联动 dex / arsc / so / 清单）");
         System.out.println("  --label L           新应用名");
+        System.out.println("  --icon FILE         替换应用图标（按各配置原尺寸逐张重采样，含自适应图标）");
         System.out.println("  --debuggable B      true/false");
         System.out.println("  --extract-native-libs B");
         System.out.println("  --utf8-pool         强制把字符串池重建为 UTF-8");
@@ -138,6 +139,38 @@ public class AvtCli {
         System.out.println("  --put ENTRY=FILE    用本地文件替换/新增条目（可重复）");
         System.out.println("  --keep-signature    MT 式保留旧 V1 签名条目");
         System.out.println("  --sign <p12>        输出前签名");
+    }
+
+    // ---------------- 图标缩放（桌面侧，ImageIO） ----------------
+
+    /**
+     * 把用户选的图裁成正方形（居中取最大内接方）再缩放到目标尺寸，输出 PNG。
+     * App 侧有等价实现（BitmapFactory），两边行为保持一致。
+     */
+    static byte[] scaleIcon(byte[] src, int w, int h) throws Exception {
+        java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(src));
+        if (img == null) throw new Exception("认不出这个图片格式");
+        int side = Math.min(img.getWidth(), img.getHeight());
+        if (side <= 0) throw new Exception("图片尺寸为 0");
+        int sx = (img.getWidth() - side) / 2;
+        int sy = (img.getHeight() - side) / 2;
+        java.awt.image.BufferedImage dst =
+                new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = dst.createGraphics();
+        try {
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+                    java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g.drawImage(img, 0, 0, w, h, sx, sy, sx + side, sy + side, null);
+        } finally {
+            g.dispose();
+        }
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream(1 << 15);
+        javax.imageio.ImageIO.write(dst, "png", bos);
+        return bos.toByteArray();
     }
 
     // ---------------- patch / bundle ----------------
@@ -158,6 +191,14 @@ public class AvtCli {
             else if ("--target-sdk".equals(k)) job.manifest.targetSdk = Integer.valueOf(Integer.parseInt(args[++i]));
             else if ("--package".equals(k) || "--rename-pkg".equals(k)) job.newPackage = args[++i];
             else if ("--label".equals(k)) job.manifest.label = args[++i];
+            else if ("--icon".equals(k)) {
+                job.iconImage = readAll(new FileInputStream(args[++i]));
+                job.iconScaler = new com.seagull.avt.core.IconReplacer.Scaler() {
+                    public byte[] scale(byte[] image, int w, int h) throws Exception {
+                        return scaleIcon(image, w, h);
+                    }
+                };
+            }
             else if ("--debuggable".equals(k)) job.manifest.debuggable = Boolean.valueOf(Boolean.parseBoolean(args[++i]));
             else if ("--extract-native-libs".equals(k)) job.manifest.extractNativeLibs = Boolean.valueOf(Boolean.parseBoolean(args[++i]));
             else if ("--utf8-pool".equals(k)) job.manifest.forceUtf8 = true;

@@ -141,6 +141,17 @@ public final class Arsc {
 
     /** 返回 Res_value 的绝对偏移；-1 表示条目不存在或非简单值。 */
     private static int entryValue(byte[] a, int typeChunkOff, int entryId) {
+        int entry = entryHeader(a, typeChunkOff, entryId);
+        if (entry < 0) return -1;
+        int entryFlags = u16(a, entry + 2);
+        if ((entryFlags & 0x0001) != 0) return -1;   // 复杂值（bag）
+        int val = entry + u16(a, entry);
+        if (val + 8 > a.length) return -1;
+        return val;
+    }
+
+    /** 返回 ResTable_entry 头的绝对偏移；-1 表示没有这个条目。 */
+    private static int entryHeader(byte[] a, int typeChunkOff, int entryId) {
         int headerSize = u16(a, typeChunkOff + 2);
         int flags = a[typeChunkOff + 9] & 0xFF;
         int entryCount = u32(a, typeChunkOff + 12);
@@ -169,11 +180,7 @@ public final class Arsc {
         if (entryOff < 0) return -1;
         int entry = typeChunkOff + entriesStart + entryOff;
         if (entry + 8 > a.length) return -1;
-        int entryFlags = u16(a, entry + 2);
-        if ((entryFlags & 0x0001) != 0) return -1;   // 复杂值（bag）
-        int val = entry + u16(a, entry);
-        if (val + 8 > a.length) return -1;
-        return val;
+        return entry;
     }
 
     private static boolean isDefaultConfig(byte[] a, int typeChunkOff) {
@@ -244,6 +251,178 @@ public final class Arsc {
         int b0 = a[off] & 0xFF;
         if ((b0 & 0x80) != 0) return new int[]{((b0 & 0x7F) << 8) | (a[off + 1] & 0xFF), off + 2};
         return new int[]{b0, off + 1};
+    }
+
+    // ================= 条目取值（图标替换等按资源 ID 取全配置） =================
+
+    /** 某个资源 ID 在某个配置下的取值。 */
+    public static final class Value {
+        public int type;
+        public int data;
+        /** type == TYPE_STRING 时为全局池里的字符串（资源文件路径）。 */
+        public String string;
+        /** 该配置的 density（ResTable_config 里的 density 字段，0 = 未指定）。 */
+        public int density;
+    }
+
+    /** 收集该资源 ID 在所有配置下的取值（不跟随引用，引用由调用方决定是否展开）。 */
+    public static List<Value> allValues(byte[] a, int resId) {
+        List<Value> out = new ArrayList<Value>();
+        if (a == null || !looksLikeArsc(a)) return out;
+        int pkgId = (resId >>> 24) & 0xFF;
+        int typeId = (resId >>> 16) & 0xFF;
+        int entryId = resId & 0xFFFF;
+        int globalPool = findChunk(a, 12, CHUNK_STRING_POOL, a.length);
+        int pos = 12;
+        while (pos + 8 <= a.length) {
+            int type = u16(a, pos);
+            int size = u32(a, pos + 4);
+            if (size <= 0 || pos + size > a.length) break;
+            if (type == CHUNK_PACKAGE && u32(a, pos + 8) == pkgId) {
+                int p = pos + u16(a, pos + 2);
+                int end = pos + size;
+                while (p + 8 <= end && p + 8 <= a.length) {
+                    int t2 = u16(a, p);
+                    int s2 = u32(a, p + 4);
+                    if (s2 <= 0 || p + s2 > end) break;
+                    if (t2 == CHUNK_TYPE && (a[p + 8] & 0xFF) == typeId) {
+                        int val = entryValue(a, p, entryId);
+                        if (val >= 0) {
+                            Value v = new Value();
+                            v.type = a[val + 3] & 0xFF;
+                            v.data = u32(a, val + 4);
+                            v.density = densityOf(a, p);
+                            if (v.type == TYPE_STRING) v.string = poolString(a, globalPool, v.data);
+                            out.add(v);
+                        }
+                    }
+                    p += s2;
+                }
+            }
+            pos += size;
+        }
+        return out;
+    }
+
+    /**
+     * 按「类型名 + 条目名」反查资源 ID（清单里写 @mipmap/ic_launcher 这种字面量时用）。
+     * 找不到返回 0。
+     */
+    public static int findByName(byte[] a, String typeName, String entryName) {
+        if (a == null || typeName == null || entryName == null) return 0;
+        int pos = 12;
+        while (pos + 8 <= a.length) {
+            int type = u16(a, pos);
+            int size = u32(a, pos + 4);
+            if (size <= 0 || pos + size > a.length) break;
+            if (type == CHUNK_PACKAGE) {
+                int pkgId = u32(a, pos + 8);
+                int typeStrings = pos + u32(a, pos + 268);
+                int keyStrings = pos + u32(a, pos + 276);
+                int p = pos + u16(a, pos + 2);
+                int end = pos + size;
+                while (p + 8 <= end && p + 8 <= a.length) {
+                    int t2 = u16(a, p);
+                    int s2 = u32(a, p + 4);
+                    if (s2 <= 0 || p + s2 > end) break;
+                    if (t2 == CHUNK_TYPE) {
+                        int tid = a[p + 8] & 0xFF;
+                        if (typeName.equals(poolString(a, typeStrings, tid - 1))) {
+                            int count = u32(a, p + 12);
+                            for (int e = 0; e < count && e <= 0xFFFF; e++) {
+                                int eh = entryHeader(a, p, e);
+                                if (eh < 0) continue;
+                                String key = poolString(a, keyStrings, u32(a, eh + 4));
+                                if (entryName.equals(key)) return (pkgId << 24) | (tid << 16) | e;
+                            }
+                        }
+                    }
+                    p += s2;
+                }
+            }
+            pos += size;
+        }
+        return 0;
+    }
+
+    /** 该资源 ID 在所有配置下的 Res_value 绝对偏移（用于原地改写值，长度不变）。 */
+    public static List<Integer> valueOffsets(byte[] a, int resId) {
+        List<Integer> out = new ArrayList<Integer>();
+        if (a == null || !looksLikeArsc(a)) return out;
+        int pkgId = (resId >>> 24) & 0xFF;
+        int typeId = (resId >>> 16) & 0xFF;
+        int entryId = resId & 0xFFFF;
+        int pos = 12;
+        while (pos + 8 <= a.length) {
+            int type = u16(a, pos);
+            int size = u32(a, pos + 4);
+            if (size <= 0 || pos + size > a.length) break;
+            if (type == CHUNK_PACKAGE && u32(a, pos + 8) == pkgId) {
+                int p = pos + u16(a, pos + 2);
+                int end = pos + size;
+                while (p + 8 <= end && p + 8 <= a.length) {
+                    int t2 = u16(a, p);
+                    int s2 = u32(a, p + 4);
+                    if (s2 <= 0 || p + s2 > end) break;
+                    if (t2 == CHUNK_TYPE && (a[p + 8] & 0xFF) == typeId) {
+                        int val = entryValue(a, p, entryId);
+                        if (val >= 0) out.add(val);
+                    }
+                    p += s2;
+                }
+            }
+            pos += size;
+        }
+        return out;
+    }
+
+    /**
+     * 把字符串追加到全局池尾部：**已有索引全部不变**，新增项从 firstIndexOut[0] 开始。
+     * 池变大后整段后移，这里同步修正 ResTable_header.size。
+     */
+    public static byte[] appendGlobalStrings(byte[] arsc, List<String> extra, int[] firstIndexOut) throws Exception {
+        if (extra == null || extra.isEmpty()) {
+            if (firstIndexOut != null && firstIndexOut.length > 0) firstIndexOut[0] = -1;
+            return arsc;
+        }
+        int poolOff = findChunk(arsc, 12, CHUNK_STRING_POOL, arsc.length);
+        if (poolOff < 0) throw new Exception("resources.arsc 里找不到全局字符串池");
+        int count = u32(arsc, poolOff + 8);
+        int styleCount = u32(arsc, poolOff + 12);
+        boolean utf8 = (u32(arsc, poolOff + 16) & 0x100) != 0;
+        int poolSize = u32(arsc, poolOff + 4);
+        int stylesStart = u32(arsc, poolOff + 24);
+
+        String[] strings = new String[count + extra.size()];
+        for (int i = 0; i < count; i++) {
+            String s = poolString(arsc, poolOff, i);
+            strings[i] = s == null ? "" : s;
+        }
+        for (int i = 0; i < extra.size(); i++) strings[count + i] = extra.get(i);
+
+        byte[] styles = new byte[0];
+        if (styleCount > 0 && stylesStart > 0 && stylesStart < poolSize) {
+            styles = Arrays.copyOfRange(arsc, poolOff + stylesStart, poolOff + poolSize);
+        }
+        byte[] newPool = encodePool(strings, utf8, styleCount, styles);
+
+        int tailStart = poolOff + poolSize;
+        int tailLen = arsc.length - tailStart;
+        byte[] out = new byte[arsc.length - poolSize + newPool.length];
+        System.arraycopy(arsc, 0, out, 0, poolOff);
+        System.arraycopy(newPool, 0, out, poolOff, newPool.length);
+        if (tailLen > 0) System.arraycopy(arsc, tailStart, out, poolOff + newPool.length, tailLen);
+        put32(out, 4, out.length);
+        if (firstIndexOut != null && firstIndexOut.length > 0) firstIndexOut[0] = count;
+        return out;
+    }
+
+    /** ResTable_config 里的 density（偏移 14），取不到返回 0。 */
+    private static int densityOf(byte[] a, int typeChunkOff) {
+        int cfg = typeChunkOff + 20;
+        if (cfg + 16 > a.length) return 0;
+        if (u32(a, cfg) < 16) return 0;
+        return u16(a, cfg + 14);
     }
 
     // ================= 写 =================

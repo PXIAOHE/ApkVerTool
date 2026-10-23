@@ -401,6 +401,39 @@ public final class AxmlPatch {
         return null;
     }
 
+    /** 元素上一个属性的原始取值（引用型返回 0x7f… 资源 ID，不做解析）。 */
+    public static final class AttrValue {
+        public int type;
+        public int data;
+        /** 字符串型时的文本，其他类型为 null。 */
+        public String text;
+    }
+
+    /**
+     * 读某个元素上某个属性的原始值；元素或属性不存在返回 null。
+     *
+     * @param androidNs 是否限定在 android 命名空间（icon / roundIcon 这类框架属性为 true）
+     */
+    public static AttrValue readAttr(byte[] axml, String element, String attrName, boolean androidNs)
+            throws Exception {
+        Doc d = parse(axml);
+        Chunk c = findElement(d, element);
+        if (c == null) return null;
+        int ns = androidNs ? androidNs(d, false) : -1;
+        for (int i = 0; i < c.attrs.size(); i++) {
+            Attr a = c.attrs.get(i);
+            if (ns >= 0 && a.ns != ns) continue;
+            if (!attrName.equals(str(d, a.name))) continue;
+            AttrValue v = new AttrValue();
+            v.type = a.type;
+            v.data = a.data;
+            if (a.type == TYPE_STRING) v.text = str(d, a.data);
+            else if (a.raw != NO_INDEX) v.text = str(d, a.raw);
+            return v;
+        }
+        return null;
+    }
+
     private static String attrString(Doc d, Chunk c, String name, boolean androidNs) {
         int ns = androidNs ? androidNs(d, false) : -1;
         for (int i = 0; i < c.attrs.size(); i++) {

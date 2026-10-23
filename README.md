@@ -53,6 +53,7 @@ UI 提供两套完整界面：**[Miuix](https://github.com/compose-miuix-ui/miui
 - `versionName` / `versionCode` / **`versionCodeMajor`（64 位版本号）**
 - `minSdk` / `targetSdk` / 包名 / 应用名（`android:label`）
 - `debuggable` / `extractNativeLibs` / `allowBackup` / `uses-permission` 增删
+- **应用图标替换**：选一张图，包里每个密度条目按原尺寸重采样；矢量 / 自适应图标走 arsc 重指向兜底
 - 属性缺失时**自动新增**（同步补 `RES_XML_RESOURCE_MAP` 框架属性 ID）
 - 字符串池按原编码重建：UTF-16 池保持 UTF-16，不强制转 UTF-8
 

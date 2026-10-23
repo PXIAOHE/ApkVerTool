@@ -147,6 +147,27 @@ fun Md3App() {
             }
         }
     }
+    // 图标选择：读完当场试解码，坏图立刻拒
+    val pickIconLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                val bytes = withContext(Dispatchers.IO) {
+                    AvtIo.readAll(context.contentResolver.openInputStream(uri)!!)
+                }
+                if (!AvtIcon.readable(bytes)) throw IllegalStateException("这个文件不是能识别的图片")
+                bytes to AvtIo.displayName(context, uri)
+            }.onSuccess { picked ->
+                mainState.iconBytes = picked.first
+                mainState.iconName = picked.second
+                AvtState.appendLog("已选图标: ${picked.second}（${AvtIo.human(picked.first.size.toLong())}）")
+            }.onFailure {
+                Toast.makeText(context, "读取图标失败: ${it.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val pickKeyLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
@@ -200,6 +221,13 @@ fun Md3App() {
                 )
             }
 
+            override fun pickIcon() { pickIconLauncher.launch(arrayOf("image/*")) }
+
+            override fun clearIcon() {
+                mainState.iconBytes = null
+                mainState.iconName = ""
+            }
+
             override fun addReplaceEntry(name: String) {
                 pendingEntryName = name
                 putFileLauncher.launch(arrayOf("*/*"))
@@ -226,6 +254,7 @@ fun Md3App() {
                     v4 = AvtPrefs.scheme(context, "scheme_v4", false),
                     p12 = readSignKey(context),
                     pass = AvtPrefs.keyPass(context).toCharArray().let { if (it.isEmpty()) null else it },
+                    iconImage = mainState.iconBytes,
                 )
                 // MD3 版：删除条目输入框的文本直接进 job
                 mainState.dropText.split("\n").forEach { line ->

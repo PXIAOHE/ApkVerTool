@@ -258,6 +258,25 @@ private fun RewritePage(state: MainUiState, host: MainHost, inner: PaddingValues
                         value = state.packageName,
                         onValueChange = { state.packageName = it },
                     )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AvtButton(
+                            text = if (state.iconBytes == null) "选择新图标…" else "换一个图标…",
+                            onClick = host::pickIcon,
+                            emphasis = AvtEmphasis.Tonal,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (state.iconBytes != null) {
+                            AvtButton(
+                                text = "清除",
+                                onClick = host::clearIcon,
+                                emphasis = AvtEmphasis.Tonal,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                    if (state.iconBytes != null) {
+                        Note("图标: ${state.iconName} · 每个密度条目按原尺寸重采样，自适应图标跟到 foreground / background")
+                    }
                     Note(
                         "改包名会同步改写 AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池；" +
                             "lib 下的 .so 仅在长度相等时原地替换。"

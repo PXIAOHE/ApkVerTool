@@ -1,6 +1,15 @@
-# ApkVerTool 更新日志（最新 v2.3.0）
+# ApkVerTool 更新日志（最新 v2.4.0）
 
-> 单一真源是工程里的 `version.py`，本文件由它导出。
+> 单一真源是工程里的 `version.py`；本文件手工维护，条目与 `version.py` 的 `CHANGELOG` 保持一致。
+
+## v2.4.0 — 2026-10-23（6 项）
+
+1. 新增应用图标替换：入口在「应用标识（应用名 / 包名）」折叠组里，MiuixX 与 Material 3 两套界面都有
+2. 按 APK 内每个密度条目的原尺寸逐张重采样（PNG / WebP / JPEG 只读头部取宽高），自适应图标会跟到 foreground / background / monochrome
+3. 纯矢量 / 自适应图标兜底：新图作为 `res/avticon.png` 写进包内，并在 `resources.arsc` 里把图标资源改指到它（字符串池尾部追加，已有索引不变）
+4. 图标与包名联动可以同时用：arsc 改动叠加，不会互相覆盖
+5. 桌面 CLI `patch` / `bundle` 新增 `--icon FILE`
+6. 修复：minSdk / targetSdk 原来在 `version.py` 与 `app/build.gradle.kts` 各写一份（26 vs 33 已经漂了），现在 Gradle 直接读 `version.py`
 
 ## v2.3.0 — 2026-10-12（3 项）
 

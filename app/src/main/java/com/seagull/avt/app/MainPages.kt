@@ -81,6 +81,9 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
     var targetSdk by remember { mutableStateOf("") }
     var label by remember { mutableStateOf("") }
     var newPackage by remember { mutableStateOf("") }
+    // 图标：选中的原图字节 + 展示名（null = 不改图标）
+    var iconBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var iconName by remember { mutableStateOf("") }
     var dropEntries by remember { mutableStateOf("") }
     var installEnabled by remember { mutableStateOf(false) }
     var shareEnabled by remember { mutableStateOf(false) }
@@ -106,6 +109,28 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
             }.onFailure {
                 AvtState.appendLog("读取失败: $it")
                 Toast.makeText(context, "读取失败: ${it.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // 图标选择：只收图片；读完当场试解码，坏图立刻拒（不让它在「开始修改」时才炸）
+    val iconPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                val bytes = withContext(Dispatchers.IO) {
+                    AvtIo.readAll(context.contentResolver.openInputStream(uri)!!)
+                }
+                if (!AvtIcon.readable(bytes)) throw IllegalStateException("这个文件不是能识别的图片")
+                bytes to AvtIo.displayName(context, uri)
+            }.onSuccess { picked ->
+                iconBytes = picked.first
+                iconName = picked.second
+                AvtState.appendLog("已选图标: ${picked.second}（${AvtIo.human(picked.first.size.toLong())}）")
+            }.onFailure {
+                Toast.makeText(context, "读取图标失败: ${it.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -236,6 +261,30 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                     label = "新包名（联动 dex / arsc / so）",
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { iconPicker.launch(arrayOf("image/*")) },
+                        modifier = Modifier.weight(1f),
+                    ) { BtnLabel(IcoFileOpen, if (iconBytes == null) "选择新图标…" else "换一个图标…") }
+                    if (iconBytes != null) {
+                        Button(
+                            onClick = {
+                                iconBytes = null
+                                iconName = ""
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("清除图标") }
+                    }
+                }
+                if (iconBytes != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "图标: $iconName · 每个密度条目按原尺寸重采样，自适应图标跟到 foreground / background",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "改包名会同步改写 AndroidManifest 字符串池、dex 字符串表、resources.arsc 全局池",
@@ -260,6 +309,7 @@ fun RewritePage(padding: PaddingValues, scrollBehavior: ScrollBehavior? = null) 
                             label = label,
                             newPackage = newPackage,
                             dropEntries = dropEntries,
+                            iconImage = iconBytes,
                         )
                     }
                 },
@@ -381,6 +431,7 @@ internal suspend fun runPatchJob(
     versionName: String, versionCode: String, versionCodeMajor: String,
     minSdk: String, targetSdk: String, label: String, newPackage: String,
     dropEntries: String,
+    iconImage: ByteArray? = null,
 ) {
     if (AvtState.busy) {
         Toast.makeText(context, "任务进行中", Toast.LENGTH_SHORT).show()
@@ -393,6 +444,7 @@ internal suspend fun runPatchJob(
     val job = AvtRunner.buildJob(
         versionName, versionCode, versionCodeMajor, minSdk, targetSdk, label, newPackage,
         dropEntries.split("\n"),
+        iconImage = iconImage,
         resign = AvtPrefs.resign(context),
         v1 = AvtPrefs.scheme(context, "scheme_v1", true),
         v2 = AvtPrefs.scheme(context, "scheme_v2", true),

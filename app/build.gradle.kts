@@ -9,6 +9,8 @@ plugins {
 val avtVersionPy = rootProject.file("version.py").readText()
 val avtVersionName = Regex("VERSION_NAME\\s*=\\s*\"([^\"]+)\"").find(avtVersionPy)!!.groupValues[1]
 val avtVersionCode = Regex("VERSION_CODE\\s*=\\s*(\\d+)").find(avtVersionPy)!!.groupValues[1].toInt()
+val avtMinSdk = Regex("MIN_SDK\\s*=\\s*(\\d+)").find(avtVersionPy)!!.groupValues[1].toInt()
+val avtTargetSdk = Regex("TARGET_SDK\\s*=\\s*(\\d+)").find(avtVersionPy)!!.groupValues[1].toInt()
 
 android {
 
@@ -18,10 +20,10 @@ android {
 
     defaultConfig {
         applicationId = "com.seagull.apkvertool"
-        // miuix-blur 0.9.4-rc01 的 manifest 硬性要求 minSdk ≥ 33（RuntimeShader 等 API），
-        // 比 overrideLibrary 强行压低安全 —— 不会在老设备上运行时崩
-        minSdk = 33
-        targetSdk = 36
+        // minSdk / targetSdk 的唯一真源是 version.py（原来这里另写一份 33/36，已经和那边漂过）
+        // miuix-blur 0.9.4-rc01 的 manifest 硬性要求 minSdk ≥ 33（RuntimeShader 等 API）
+        minSdk = avtMinSdk
+        targetSdk = avtTargetSdk
         // 与 version.py 单一真源保持一致（2.0.3 / 26）
         // 相对上游 v2.1.0 递增（上游是 27 / 2.1.0），避免版本号倒退
         versionCode = avtVersionCode

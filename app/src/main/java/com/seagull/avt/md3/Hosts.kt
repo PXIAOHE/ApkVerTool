@@ -6,6 +6,10 @@ package com.seagull.avt.md3
 interface MainHost {
     fun openSettings()
     fun pickFiles()
+    /** 选新图标（图片）。 */
+    fun pickIcon()
+    /** 清掉已选图标。 */
+    fun clearIcon()
     fun addReplaceEntry(name: String)
     fun clearReplaceEntries()
     fun clearLogs()
