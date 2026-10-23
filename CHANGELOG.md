@@ -1,6 +1,13 @@
-# ApkVerTool 更新日志（最新 v2.4.0）
+# ApkVerTool 更新日志（最新 v2.4.1）
 
 > 单一真源是工程里的 `version.py`；本文件手工维护，条目与 `version.py` 的 `CHANGELOG` 保持一致。
+
+## v2.4.1 — 2026-10-23（4 项）
+
+1. 发布链路自动化：push 到 `main` 就用 `version.py` 的版本号发 GitHub Release，不再需要手动打标签
+2. 发版后自动把 APK 写进 `dist/`、重写 `latest.json`（真实 sha256 / 体积）、锁定 jsDelivr 直链 commit
+3. 自动重生成 README 下载区与官网并提交回 `main`，再派发一次 Pages 部署
+4. 同一版本重复 push 不会重复发版，也不会反复刷 `dist/` 与官网
 
 ## v2.4.0 — 2026-10-23（6 项）
 

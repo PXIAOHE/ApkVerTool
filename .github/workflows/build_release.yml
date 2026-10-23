@@ -7,7 +7,8 @@ on:
   workflow_dispatch:      # 手动触发（发版 / 其他分支）
 
 permissions:
-  contents: write         # 发布 Release 需要写权限
+  contents: write         # 发布 Release、把 dist/ 与官网改动提交回 main
+  actions: write          # 提交是 GITHUB_TOKEN 干的，不会自动触发 pages.yml，需要主动派发
 
 jobs:
   build:
@@ -169,3 +170,14 @@ jobs:
             --apk "${{ steps.apk.outputs.path }}" \
             --name "${{ steps.ver.outputs.name }}" \
             --code "${{ steps.ver.outputs.code }}"
+
+      # 用 GITHUB_TOKEN 推的提交不会再触发别的 workflow（GitHub 防递归），
+      # 所以官网部署要显式派发一次；docs/ 真的变了才有意义，没变化时派发也无副作用。
+      - name: Trigger site deploy
+        if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && env.SKIP_RELEASE != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          gh workflow run pages.yml --ref main
+          echo "已派发 pages.yml（官网部署）"

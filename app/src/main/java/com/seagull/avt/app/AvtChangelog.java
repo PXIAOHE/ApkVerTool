@@ -3,6 +3,7 @@ package com.seagull.avt.app;
 /** 由 version.py 自动生成，请勿手改。每行 = {版本, 日期, 条目…}。 */
 public final class AvtChangelog {
     public static final String[][] ENTRIES = {
+            {"2.4.1", "2026-10-23", "发布链路自动化：push 到 main 就用 version.py 的版本号发 GitHub Release，不再需要手动打标签", "发版后自动把 APK 写进 dist/、重写 latest.json（真实 sha256/体积）、锁定 jsDelivr 直链 commit", "自动重生成 README 下载区与官网并提交回 main，再派发一次 Pages 部署", "同一版本重复 push 不会重复发版，也不会反复刷 dist/ 与官网"},
             {"2.4.0", "2026-10-23", "新增应用图标替换：入口在「应用标识（应用名 / 包名）」折叠组里，MiuixX 与 Material 3 两套界面都有", "按 APK 内每个密度条目的原尺寸逐张重采样（PNG / WebP / JPEG 只读头部取宽高），自适应图标会跟到 foreground / background / monochrome", "纯矢量 / 自适应图标兜底：新图作为 res/avticon.png 写进包内，并在 resources.arsc 里把图标资源改指到它（字符串池尾部追加，已有索引不变）", "图标与包名联动可以同时用：arsc 改动叠加，不会互相覆盖", "桌面 CLI patch / bundle 新增 --icon FILE", "修复：minSdk / targetSdk 原来在 version.py 与 build.gradle.kts 各写一份（26 vs 33 已经漂了），现在 Gradle 直接读 version.py"},
             {"2.3.4", "2026-10-12", "更新提示里的「去下载」改走国内直链（jsDelivr，commit 锁定），拉不动自动退回 GitHub Release", "关于页新增「官网」入口；官网已上线：更新日志、国内直链下载、sha256 校验都在上面", "清单新增 apk_url_cdn 字段，App 优先用它——不再受 GitHub 在国内的连通性影响"},
             {"2.3.3", "2026-10-12", "MiuixX 关于页「检查更新」的副标题只留「当前 v…（code …）」，去掉逗号后面那句「点一下问一次服务器」"},

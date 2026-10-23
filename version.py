@@ -5,8 +5,8 @@
 改版本 / 改更新日志只需要改这一个文件，不再出现 build.sh 还写着 v1.4.5 这种事。
 """
 
-VERSION_NAME = "2.4.0"
-VERSION_CODE = 35
+VERSION_NAME = "2.4.1"
+VERSION_CODE = 36
 
 # 应用标识
 PACKAGE = "com.seagull.apkvertool"
@@ -24,6 +24,12 @@ SITE_URL = "https://pxiaohe.github.io/ApkVerTool/"
 
 # 更新日志：(版本, 日期, [条目…])，顺序即展示顺序（新 → 旧）
 CHANGELOG = [
+    ("2.4.1", "2026-10-23", [
+        "发布链路自动化：push 到 main 就用 version.py 的版本号发 GitHub Release，不再需要手动打标签",
+        "发版后自动把 APK 写进 dist/、重写 latest.json（真实 sha256/体积）、锁定 jsDelivr 直链 commit",
+        "自动重生成 README 下载区与官网并提交回 main，再派发一次 Pages 部署",
+        "同一版本重复 push 不会重复发版，也不会反复刷 dist/ 与官网",
+    ]),
     ("2.4.0", "2026-10-23", [
         "新增应用图标替换：入口在「应用标识（应用名 / 包名）」折叠组里，MiuixX 与 Material 3 两套界面都有",
         "按 APK 内每个密度条目的原尺寸逐张重采样（PNG / WebP / JPEG 只读头部取宽高），自适应图标会跟到 foreground / background / monochrome",
